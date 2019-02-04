@@ -213,6 +213,7 @@
     <Compile Include="..\ErikEJ.EntityFrameworkCore.DgmlBuilder\DgmlBuilder.cs">
       <Link>ModelBuilder\DgmlBuilder.cs</Link>
     </Compile>
+    <Compile Include="CustomPostProcessing\EGCustomChanges.cs" />
     <Compile Include="ReverseEngineer\ColumnNamer.cs" />
     <Compile Include="ReverseEngineer\Schema.cs" />
     <Compile Include="ReverseEngineer\TableRenamer.cs" />
@@ -245,6 +246,7 @@
   <ItemGroup>
     <Content Include="packages.txt" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>

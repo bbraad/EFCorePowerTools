@@ -120,26 +120,28 @@ namespace EFCorePowerTools.Handlers
                 _package.Dte2.StatusBar.Text = "Getting options...";
                 if (modelDialog.ShowModal() != true) return;
 
-                options = new ReverseEngineerOptions
-                {
-                    UseFluentApiOnly = !modelDialog.UseDataAnnotations,
-                    ConnectionString = dbInfo.ConnectionString,
-                    ContextClassName = modelDialog.ModelName,
-                    DatabaseType = (ReverseEngineer20.DatabaseType)dbInfo.DatabaseType,
-                    ProjectPath = projectPath,
-                    OutputPath = modelDialog.OutputPath,
-                    ProjectRootNamespace = modelDialog.NameSpace,
-                    UseDatabaseNames = modelDialog.UseDatabaseNames,
-                    UseInflector = modelDialog.UsePluralizer,
-                    IdReplace = modelDialog.ReplaceId,
-                    UseHandleBars = modelDialog.UseHandelbars,
-                    IncludeConnectionString = modelDialog.IncludeConnectionString,
-                    SelectedToBeGenerated = modelDialog.SelectedTobeGenerated,
-                    Dacpac = dacpacPath,
-                    DefaultDacpacSchema = dacpacSchema,
-                    Tables = ptd.Tables,
-                    CustomReplacers = customNameOptions
-                };
+				options = new ReverseEngineerOptions
+				{
+					UseFluentApiOnly = !modelDialog.UseDataAnnotations,
+					ConnectionString = dbInfo.ConnectionString,
+					ContextClassName = modelDialog.ModelName,
+					DatabaseType = (ReverseEngineer20.DatabaseType)dbInfo.DatabaseType,
+					ProjectPath = projectPath,
+					OutputPath = modelDialog.OutputPath,
+					ProjectRootNamespace = modelDialog.NameSpace,
+					UseDatabaseNames = modelDialog.UseDatabaseNames,
+					UseInflector = modelDialog.UsePluralizer,
+					IdReplace = modelDialog.ReplaceId,
+					UseHandleBars = modelDialog.UseHandelbars,
+					IncludeConnectionString = modelDialog.IncludeConnectionString,
+					SelectedToBeGenerated = modelDialog.SelectedTobeGenerated,
+					Dacpac = dacpacPath,
+					DefaultDacpacSchema = dacpacSchema,
+					Tables = ptd.Tables,
+					CustomReplacers = customNameOptions,
+					UseFullNamespace = modelDialog.UseFullNamespace,
+					ExcludeStringLengthAttribute = modelDialog.ExcludeStringLengthAttribute
+					 };
 
                 _package.Dte2.StatusBar.Text = "Generating code...";
 
