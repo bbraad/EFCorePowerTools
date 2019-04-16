@@ -1,4 +1,5 @@
 # EF Core Power Tools
+(Fork of ErikEJ EF Core Power Tools customized to local needs).
 
 Entity Framework Core Power Tools - reverse engineering and model visualization for EF Core
 
