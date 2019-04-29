@@ -40,7 +40,26 @@ namespace EFCorePowerTools.Handlers
                     return;
                 }
 
-                var processLauncher = new ProcessLauncher(project.IsNetCore(), project.IsNetCore21(), project.IsNetCore22());
+                if (project.IsNetCore())
+                {
+                    var result = project.ContainsEfCoreDesignReference();
+                    if (string.IsNullOrEmpty(result.Item2))
+                    {
+                        EnvDteHelper.ShowError("EF Core 2.1 or 2.2 not found in project");
+                        return;
+                    }
+
+                    if (!result.Item1)
+                    {
+                        var version = new Version(result.Item2);
+                        var nugetHelper = new NuGetHelper();
+                        nugetHelper.InstallPackage("Microsoft.EntityFrameworkCore.Design", project, version);
+                        EnvDteHelper.ShowError($"Installing EFCore.Design version {version}, please retry the command");
+                        return;
+                    }
+                }
+
+                var processLauncher = new ProcessLauncher(project);
 
                 var processResult = processLauncher.GetOutput(outputPath, generationType, null);
 
@@ -86,7 +105,7 @@ namespace EFCorePowerTools.Handlers
         private void GenerateDgml(string processResult, Project project)
         {
             var dgmlBuilder = new DgmlBuilder.DgmlBuilder();
-            var processLauncher = new ProcessLauncher(project.IsNetCore(), project.IsNetCore21(), project.IsNetCore22());
+            var processLauncher = new ProcessLauncher(project);
 
             var result = processLauncher.BuildModelResult(processResult);
             ProjectItem item = null;

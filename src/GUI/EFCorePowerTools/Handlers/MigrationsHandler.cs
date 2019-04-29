@@ -1,6 +1,5 @@
 ﻿using EFCorePowerTools.Extensions;
 using EnvDTE;
-using ErikEJ.SqlCeToolbox.Dialogs;
 using ErikEJ.SqlCeToolbox.Helpers;
 using System;
 using System.Collections.Generic;
@@ -8,6 +7,8 @@ using System.IO;
 
 namespace EFCorePowerTools.Handlers
 {
+    using Contracts.Views;
+
     internal class MigrationsHandler
     {
         private readonly EFCorePowerToolsPackage _package;
@@ -52,12 +53,31 @@ namespace EFCorePowerTools.Handlers
                     return;
                 }
 
-                var msd = new EfCoreMigrationsDialog(_package, outputPath, project)
+                if (project.IsNetCore())
                 {
-                    ProjectName = project.Name
-                };
+                    var result = project.ContainsEfCoreDesignReference();
 
-                msd.ShowModal();
+                    if (string.IsNullOrEmpty(result.Item2))
+                    {
+                        EnvDteHelper.ShowError("EF Core 2.1 or 2.2 not found in project");
+                        return;
+                    }
+
+                    if (!result.Item1)
+                    {
+                        var version = new Version(result.Item2);
+                        var nugetHelper = new NuGetHelper();
+                        nugetHelper.InstallPackage("Microsoft.EntityFrameworkCore.Design", project, version);
+                        EnvDteHelper.ShowError($"Installing EFCore.Design version {version}, please retry the command");
+                        return;
+                    }
+                }                
+
+                var migrationsDialog = _package.GetView<IMigrationOptionsDialog>();
+                migrationsDialog.UseProjectForMigration(project)
+                                .UseOutputPath(outputPath);
+
+                migrationsDialog.ShowAndAwaitUserResponse(true);
             }
             catch (Exception exception)
             {
