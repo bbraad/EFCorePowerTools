@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="5DAB40E8-A1D9-469E-9CBD-2768F771FBAC" Version="1.0.9" Language="en-US" Publisher="ErikEJ (Local Brian)" />
+        <Identity Id="5DAB40E8-A1D9-469E-9CBD-2768F771FBAC" Version="1.0.11" Language="en-US" Publisher="ErikEJ (Local Brian)" />
         <DisplayName>EF Core Power Tools (Local version)</DisplayName>
         <Description xml:space="preserve">Useful design-time DbContext features, added to the Visual Studio Solution Explorer context menu.
 
