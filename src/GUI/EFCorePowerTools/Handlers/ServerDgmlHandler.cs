@@ -7,6 +7,13 @@ using System.IO;
 
 namespace EFCorePowerTools.Handlers
 {
+    using System.Linq;
+    using Contracts.Views;
+    using Dialogs;
+    using ReverseEngineer20.ReverseEngineer;
+    using Shared.Enums;
+    using Shared.Models;
+
     internal class ServerDgmlHandler
     {
         private readonly EFCorePowerToolsPackage _package;
@@ -28,13 +35,34 @@ namespace EFCorePowerTools.Handlers
 
                 var databaseList = EnvDteHelper.GetDataConnections(_package);
 
-                var psd = new PickServerDatabaseDialog(databaseList, _package, new Dictionary<string, string>());
-                var diagRes = psd.ShowModal();
-                if (!diagRes.HasValue || !diagRes.Value) return;
+                var psd = _package.GetView<IPickServerDatabaseDialog>();
+                psd.PublishConnections(databaseList.Select(m => new DatabaseConnectionModel
+                {
+                    ConnectionName = m.Value.Caption,
+                    ConnectionString = m.Value.ConnectionString,
+                    DatabaseType = m.Value.DatabaseType
+                }));
 
+                var pickDataSourceResult = psd.ShowAndAwaitUserResponse(true);
+                if (!pickDataSourceResult.ClosedByOK)
+                    return;
+                
                 _package.Dte2.StatusBar.Text = "Loading schema information...";
 
-                var dbInfo = psd.SelectedDatabase.Value;
+                // Reload the database list, in case the user has added a new database in the dialog
+                databaseList = EnvDteHelper.GetDataConnections(_package);
+
+                DatabaseInfo dbInfo = null;
+                if (pickDataSourceResult.Payload.Connection != null)
+                {
+                    dbInfo = databaseList.Single(m => m.Value.ConnectionString == pickDataSourceResult.Payload.Connection?.ConnectionString).Value;
+                }
+
+                if (dbInfo == null)
+                {
+                    // User didn't select a database, should be impossible, though
+                    return;
+                }
 
                 if (dbInfo.DatabaseType == DatabaseType.SQLCE35)
                 {
@@ -42,14 +70,22 @@ namespace EFCorePowerTools.Handlers
                     return;
                 }
 
-                var ptd = new PickTablesDialog();
+                var predefinedTables = new List<TableInformationModel>();
                 using (var repository = RepositoryHelper.CreateRepository(dbInfo))
                 {
-                    ptd.Tables = repository.GetAllTableNamesForExclusion();
+                    var tables = repository.GetAllTableNamesForExclusion();
+                    foreach (var table in tables)
+                    {
+                        predefinedTables.Add(new TableInformationModel(table, true));
+                    }
                 }
 
-                var res = ptd.ShowModal();
-                if (!res.HasValue || !res.Value) return;
+                var ptd = _package.GetView<IPickTablesDialog>()
+                                  .AddTables(predefinedTables);
+
+                var (closedByOk, selectedTables) = ptd.ShowAndAwaitUserResponse(true);
+                if (!closedByOk) return;
+                var unselectedTables = predefinedTables.Except(selectedTables).Select(m => m.Name).ToList();
 
                 var name = RepositoryHelper.GetClassBasis(dbInfo.ConnectionString, dbInfo.DatabaseType);
 
@@ -64,7 +100,7 @@ namespace EFCorePowerTools.Handlers
                 using (var repository = RepositoryHelper.CreateRepository(dbInfo))
                 {
                     var generator = RepositoryHelper.CreateGenerator(repository, path, dbInfo.DatabaseType);
-                    generator.GenerateSchemaGraph(dbInfo.ConnectionString, ptd.Tables);
+                    generator.GenerateSchemaGraph(dbInfo.ConnectionString, unselectedTables);
                     File.SetAttributes(path, FileAttributes.ReadOnly);
                     _package.Dte2.ItemOperations.OpenFile(path);
                     _package.Dte2.ActiveDocument.Activate();

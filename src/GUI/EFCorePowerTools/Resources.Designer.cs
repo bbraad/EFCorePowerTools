@@ -192,6 +192,15 @@ namespace EFCorePowerTools {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to c6882346-e592-4da5-80ba-d2eadcda0359.
+        /// </summary>
+        internal static string MysqlVSProvider {
+            get {
+                return ResourceManager.GetString("MysqlVSProvider", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Fixed-length Unicode data with a maximum length of 4000 characters. Default length = 1.
         ///Storage size, in bytes, is two times the number of characters entered..
         /// </summary>
@@ -289,33 +298,6 @@ namespace EFCorePowerTools {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to System.Data.SqlServerCe.4.0.
-        /// </summary>
-        internal static string SqlCompact40InvariantName {
-            get {
-                return ResourceManager.GetString("SqlCompact40InvariantName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 673BE80C-CB41-47A7-B0F3-9872B6DDE5E5.
-        /// </summary>
-        internal static string SqlCompact40PrivateProvider {
-            get {
-                return ResourceManager.GetString("SqlCompact40PrivateProvider", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0cfb2eeb-3e0e-4909-99b7-8ae9e1c3e871.
-        /// </summary>
-        internal static string SqlCompact40Provider {
-            get {
-                return ResourceManager.GetString("SqlCompact40Provider", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to System.Data.SQLite.EF6.
         /// </summary>
         internal static string SQLiteEF6InvariantName {
@@ -330,24 +312,6 @@ namespace EFCorePowerTools {
         internal static string SQLiteInvariantName {
             get {
                 return ResourceManager.GetString("SQLiteInvariantName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 687EA40E-7B91-472A-9A58-2A3D43DE1ACE.
-        /// </summary>
-        internal static string SqlitePrivateProvider {
-            get {
-                return ResourceManager.GetString("SqlitePrivateProvider", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to 0ebaab6e-ca80-4b4a-8ddf-cbe6bf058c70.
-        /// </summary>
-        internal static string SQLiteProvider {
-            get {
-                return ResourceManager.GetString("SQLiteProvider", resourceCulture);
             }
         }
         

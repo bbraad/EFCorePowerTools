@@ -5,6 +5,9 @@ using System.IO;
 
 namespace ErikEJ.SqlCeToolbox.Helpers
 {
+    using EFCorePowerTools;
+    using EFCorePowerTools.Shared.Enums;
+
     internal static class RepositoryHelper
     {
         //TODO Update this when SQLite provider is updated!
@@ -19,7 +22,7 @@ namespace ErikEJ.SqlCeToolbox.Helpers
                 case DatabaseType.SQLCE40:
                     return new DB4Repository(databaseInfo.ConnectionString);
                 case DatabaseType.SQLServer:
-                    return new ServerDBRepository(databaseInfo.ConnectionString, Properties.Settings.Default.KeepSchemaNames);
+                    return new ServerDBRepository(databaseInfo.ConnectionString, Settings.Default.KeepSchemaNames);
                 case DatabaseType.SQLite:
                     return new SQLiteRepository(databaseInfo.ConnectionString);
                 default:

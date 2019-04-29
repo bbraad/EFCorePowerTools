@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Scaffolding.Metadata;
-using Microsoft.SqlServer.Dac.Extensions.Prototype;
+﻿using Microsoft.SqlServer.Dac.Extensions.Prototype;
 using NUnit.Framework;
 using ReverseEngineer20;
 using System.Collections.Generic;
@@ -31,10 +30,10 @@ namespace UnitTests
             var builder = new DacpacTableListBuilder(dacpac);
 
             // Act
-            var result = builder.GetTableNames();
+            var result = builder.GetTableDefinitions();
 
             // Assert
-            Assert.AreEqual("dbo.Album", result[0]);
+            Assert.AreEqual("dbo.Album", result[0].Name);
             Assert.AreEqual(11, result.Count);
         }
 
@@ -122,8 +121,7 @@ namespace UnitTests
             Assert.AreEqual("TypeAlias", dbModel.Tables[0].Name);
             Assert.AreEqual(2, dbModel.Tables[0].Columns.Count);
 
-            Assert.AreEqual("TestTypeAlias", dbModel.Tables[0].Columns[1].StoreType);
-            Assert.AreEqual("nvarchar(max)", dbModel.Tables[0].Columns[1].GetUnderlyingStoreType());
+            Assert.AreEqual("nvarchar(max)", dbModel.Tables[0].Columns[1].StoreType);
         }
 
         [Test]

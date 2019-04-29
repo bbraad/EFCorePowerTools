@@ -13,11 +13,17 @@ namespace EFCorePowerTools.Handlers
     {
         private readonly bool _isNetCore;
         private readonly bool _isNetCore21;
+        private readonly bool _isNetCore22;
 
-        public ProcessLauncher(bool isNetCore, bool isNetCore21)
+        public ProcessLauncher(bool isNetCore, bool isNetCore21, bool isNetCore22)
         {
             _isNetCore = isNetCore;
             _isNetCore21 = isNetCore21;
+            _isNetCore22 = isNetCore22;
+            if (!isNetCore21 && !isNetCore22)
+            {
+                throw new ArgumentException("Only .NET Core 2.1 and 2.2 are supported");
+            }
         }
 
         public Task<string> GetOutputAsync(string outputPath, string projectPath, GenerationType generationType, string contextName, string migrationIdentifier, string nameSpace)
@@ -86,18 +92,19 @@ namespace EFCorePowerTools.Handlers
 
             if (_isNetCore)
             {
-                startInfo.WorkingDirectory = launchPath;
+                startInfo.WorkingDirectory = Path.GetDirectoryName(outputPath);
+                var efptPath = " " + Path.Combine(launchPath, "efpt.dll");
                 startInfo.FileName = "dotnet";
                 if (generationType == GenerationType.Ddl
                     || generationType == GenerationType.MigrationApply
                     || generationType == GenerationType.MigrationAdd
                     || generationType == GenerationType.MigrationStatus)
                 {
-                    startInfo.Arguments = " efpt.dll " + startInfo.Arguments;
+                    startInfo.Arguments = efptPath + " " + startInfo.Arguments;
                 }
                 else
                 {
-                    startInfo.Arguments = " efpt.dll \"" + outputPath + "\"";
+                    startInfo.Arguments = efptPath + " \"" + outputPath + "\"";
                 }
             }
 
@@ -125,18 +132,20 @@ namespace EFCorePowerTools.Handlers
             Version version = null;
             var testFile = Path.Combine(toDir, "Microsoft.EntityFrameworkCore.dll");
 
-
             if (File.Exists(testFile))
             {
                 var fvi = FileVersionInfo.GetVersionInfo(testFile);
                 version = Version.Parse(fvi.FileVersion);
 
-                if (version.ToString(3) == "2.0.0") testVersion = "2.0.0";
-                if (version.ToString(3) == "2.0.1") testVersion = "2.0.1";
-                if (version.ToString(3) == "2.0.2") testVersion = "2.0.2";
-                if (version.ToString(3) == "2.0.3") testVersion = "2.0.3";
-                if (version.ToString(3) == "2.1.0") testVersion = "2.1.0";
-                if (version.ToString(3) == "2.1.4") testVersion = "2.1.4";
+                if (version.ToString(3) == "2.1.0" 
+                    || version.ToString(3) == "2.1.4"
+                    || version.ToString(3) == "2.2.0"
+                    || version.ToString(3) == "2.2.1"
+                    || version.ToString(3) == "2.2.2"
+                    )
+                {
+                    testVersion = version.ToString(3);
+                }
             }
             else
             {
@@ -149,14 +158,7 @@ namespace EFCorePowerTools.Handlers
                 throw new Exception(
                     $"Unable to find a supported version of Microsoft.EntityFrameworkCore.dll in folder {toDir}. Version found: {version}");
             }
-            if (testVersion == "2.1.0" || testVersion == "2.1.4")
-            {
-                File.Copy(Path.Combine(fromDir, testVersion, "efpt.exe"), Path.Combine(toDir, "efpt.exe"), true);
-            }
-            else
-            {
-                File.Copy(Path.Combine(fromDir, "2.0.0", "efpt.exe"), Path.Combine(toDir, "efpt.exe"), true);
-            }
+            File.Copy(Path.Combine(fromDir, testVersion, "efpt.exe"), Path.Combine(toDir, "efpt.exe"), true);
             File.Copy(Path.Combine(fromDir, testVersion, "efpt.exe.config"), Path.Combine(toDir, "efpt.exe.config"), true);
             File.Copy(Path.Combine(fromDir, testVersion, "Microsoft.EntityFrameworkCore.Design.dll"), Path.Combine(toDir, "Microsoft.EntityFrameworkCore.Design.dll"), true);
 
@@ -182,9 +184,9 @@ namespace EFCorePowerTools.Handlers
             {
                 ZipFile.ExtractToDirectory(Path.Combine(fromDir, "efpt21.exe.zip"), toDir);
             }
-            else
+            else if (_isNetCore22)
             {
-                ZipFile.ExtractToDirectory(Path.Combine(fromDir, "efpt.exe.zip"), toDir);
+                ZipFile.ExtractToDirectory(Path.Combine(fromDir, "efpt22.exe.zip"), toDir);
             }
             return toDir;
         }

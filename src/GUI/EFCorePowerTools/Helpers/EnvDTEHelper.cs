@@ -1,4 +1,6 @@
 ﻿using EFCorePowerTools;
+using EFCorePowerTools.Shared.Enums;
+using EFCorePowerTools.Shared.Models;
 using ErikEJ.SqlCeScripting;
 using Microsoft.VisualStudio.Data.Core;
 using Microsoft.VisualStudio.Data.Services;
@@ -11,6 +13,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using MySql.Data.MySqlClient;
 
 // ReSharper disable once CheckNamespace
 namespace ErikEJ.SqlCeToolbox.Helpers
@@ -22,11 +25,12 @@ namespace ErikEJ.SqlCeToolbox.Helpers
             // http://www.mztools.com/articles/2007/MZ2007018.aspx
             Dictionary<string, DatabaseInfo> databaseList = new Dictionary<string, DatabaseInfo>();
             var dataExplorerConnectionManager = package.GetService<IVsDataExplorerConnectionManager>();
-            Guid provider40 = new Guid(Resources.SqlCompact40Provider);
-            Guid provider40Private = new Guid(Resources.SqlCompact40PrivateProvider);
-            Guid providerSqLite = new Guid(Resources.SQLiteProvider);
-            Guid providerSqlitePrivate = new Guid(Resources.SqlitePrivateProvider);
+            Guid provider40 = new Guid(EFCorePowerTools.Shared.Resources.SqlCompact40Provider);
+            Guid provider40Private = new Guid(EFCorePowerTools.Shared.Resources.SqlCompact40PrivateProvider);
+            Guid providerSqLite = new Guid(EFCorePowerTools.Shared.Resources.SQLiteProvider);
+            Guid providerSqlitePrivate = new Guid(EFCorePowerTools.Shared.Resources.SQLitePrivateProvider);
             Guid providerNpgsql = new Guid(Resources.NpgsqlProvider);
+            Guid providerMysql = new Guid(Resources.MysqlVSProvider);
 
             bool isV40Installed = RepositoryHelper.IsV40Installed() &&
                 (DdexProviderIsInstalled(provider40) || DdexProviderIsInstalled(provider40Private));
@@ -61,6 +65,12 @@ namespace ErikEJ.SqlCeToolbox.Helpers
                             || objProviderGuid == providerNpgsql)
                         {
                             info.DatabaseType = objProviderGuid == providerNpgsql ? DatabaseType.Npgsql : DatabaseType.SQLServer;
+                        }
+
+                        // This provider depends on https://dev.mysql.com/downloads/windows/visualstudio/
+                        if (objProviderGuid == providerMysql)
+                        {
+                            info.DatabaseType = DatabaseType.Mysql;
                         }
 
                         if (info.DatabaseType != DatabaseType.SQLCE35
@@ -105,21 +115,23 @@ namespace ErikEJ.SqlCeToolbox.Helpers
             dialog.SelectedSource = new Guid("067ea0d9-ba62-43f7-9106-34930c60c528");
             var dialogResult = dialog.ShowDialog(connect: true);
 
-            if (dialogResult == null) return new DatabaseInfo {DatabaseType = DatabaseType.SQLCE35};
+            if (dialogResult == null) return new DatabaseInfo {DatabaseType = DatabaseType.Undefined};
 
             var info = GetDatabaseInfo(package, dialogResult.Provider, DataProtection.DecryptString(dialog.EncryptedConnectionString));
-            if (info.Size == Guid.Empty.ToString()) return new DatabaseInfo { DatabaseType = DatabaseType.SQLCE35 };
+            if (info.Size == Guid.Empty.ToString()) return new DatabaseInfo { DatabaseType = DatabaseType.Undefined };
 
-            SaveDataConnection(package, dialog.EncryptedConnectionString, info.DatabaseType, new Guid(info.Size));
+            var savedName = SaveDataConnection(package, dialog.EncryptedConnectionString, info.DatabaseType, new Guid(info.Size));
+            info.Caption = savedName;
             return info;
         }
 
-        internal static void SaveDataConnection(EFCorePowerToolsPackage package, string encryptedConnectionString,
+        internal static string SaveDataConnection(EFCorePowerToolsPackage package, string encryptedConnectionString,
             DatabaseType dbType, Guid provider)
         {
             var dataExplorerConnectionManager = package.GetService<IVsDataExplorerConnectionManager>();
             var savedName = GetFileName(DataProtection.DecryptString(encryptedConnectionString), dbType);
             dataExplorerConnectionManager.AddConnection(savedName, provider, encryptedConnectionString, true);
+            return savedName;
         }
 
         private static DatabaseInfo GetDatabaseInfo(EFCorePowerToolsPackage package, Guid provider, string connectionString)
@@ -138,12 +150,12 @@ namespace ErikEJ.SqlCeToolbox.Helpers
                 if (providerInvariant == "System.Data.SqlServerCe.4.0")
                 {
                     dbType = DatabaseType.SQLCE40;
-                    providerGuid = Resources.SqlCompact40PrivateProvider;
+                    providerGuid = EFCorePowerTools.Shared.Resources.SqlCompact40PrivateProvider;
                 }
                 if (providerInvariant == "System.Data.SQLite.EF6")
                 {
                     dbType = DatabaseType.SQLite;
-                    providerGuid = Resources.SqlitePrivateProvider;
+                    providerGuid = EFCorePowerTools.Shared.Resources.SQLitePrivateProvider;
                 }
                 if (providerInvariant == "System.Data.SqlClient")
                 {
@@ -154,6 +166,12 @@ namespace ErikEJ.SqlCeToolbox.Helpers
                 {
                     dbType = DatabaseType.Npgsql;
                     providerGuid = Resources.NpgsqlProvider;
+                }
+
+                if (providerInvariant == "Mysql")
+                {
+                    dbType = DatabaseType.Mysql;
+                    providerGuid = Resources.MysqlVSProvider;
                 }
             }
             return new DatabaseInfo
@@ -171,9 +189,9 @@ namespace ErikEJ.SqlCeToolbox.Helpers
             return pgBuilder.Database;
         }
 
-        internal static List<string> GetNpgsqlTableNames(string connectionString)
+        internal static List<TableInformationModel> GetNpgsqlTableNames(string connectionString)
         {
-            var result = new List<string>();
+            var result = new List<TableInformationModel>();
             using (var npgsqlConn = new NpgsqlConnection(connectionString))
             {
                 npgsqlConn.Open();
@@ -184,12 +202,79 @@ namespace ErikEJ.SqlCeToolbox.Helpers
                     if (schema != "pg_catalog"
                         && schema != "information_schema")
                     {
-                        result.Add(schema + "." + row["table_name"].ToString());
+                        // TODO: Check if the table has a primary key
+                        result.Add(new TableInformationModel(schema + "." + row["table_name"].ToString(), true));
                     }
                 }
             }
 
-            return result.OrderBy(l => l).ToList();
+            return result.OrderBy(l => l.Name).ToList();
+        }
+
+        internal static string GetMysqlDatabaseName(string connectionString)
+        {
+            var myBuilder = new MySqlConnectionStringBuilder(connectionString);
+            return myBuilder.Database;
+        }
+
+        internal static List<TableInformationModel> GetMysqlTableNames(string connectionString)
+        {
+            var result = new List<TableInformationModel>();
+            using (var mysqlConn = new MySqlConnection(connectionString))
+            {
+                mysqlConn.Open();
+
+                var tables = GetMysqlTables(mysqlConn, mysqlConn.Database);
+                string schema = mysqlConn.Database;
+                if (schema != "information_schema")
+                {
+                    foreach (string table in tables)
+                    {
+                        bool hasPrimaryKey = HasMysqlPrimaryKey(schema, table, mysqlConn);
+                        result.Add(new TableInformationModel(table, hasPrimaryKey));
+                    }
+                }
+            }
+
+            return result.OrderBy(l => l.Name).ToList();
+        }
+
+        // We could use Mysql.Data for this as MysqlConnector doesn't support GetSchema("Tables").
+        // I will just pluck the data we need for now.
+        private static List<string> GetMysqlTables(MySqlConnection mysqlConn, string schema)
+        {
+            List<string> tables = new List<string>();
+            string sql = $@"SHOW TABLE STATUS FROM `{schema}`";
+
+            MySqlCommand cmd = new MySqlCommand(sql, mysqlConn);
+            using (MySqlDataReader reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    tables.Add(reader.GetString(0));
+                }
+            }
+
+
+            return tables;
+        }
+
+        private static bool HasMysqlPrimaryKey(string schemaName, string tableName, MySqlConnection mysqlConn)
+        {
+            /**
+             * A Unique index can unexpectedly be shown as a primary key here:             *
+             * https://dev.mysql.com/doc/mysql-infoschema-excerpt/5.6/en/columns-table.html
+             * "A UNIQUE index may be displayed as PRI if it cannot contain NULL values and there is no PRIMARY KEY in the table.
+             * A UNIQUE index may display as MUL if several columns form a composite UNIQUE index; although the combination of
+             * the columns is unique, each column can still hold multiple occurrences of a given value."
+             */
+            MySqlCommand cmd = mysqlConn.CreateCommand();
+            cmd.CommandText = "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema = @schema AND table_name = @table AND column_key = 'PRI') AS HasPrimaryKey";
+            cmd.Parameters.AddWithValue("@schema", schemaName);
+            cmd.Parameters.AddWithValue("@table", tableName);
+            string value = cmd.ExecuteScalar().ToString();
+
+            return value == "1";
         }
 
         private static string GetFilePath(string connectionString, DatabaseType dbType)
@@ -207,6 +292,8 @@ namespace ErikEJ.SqlCeToolbox.Helpers
             }
             if (dbType == DatabaseType.Npgsql)
                 return GetNpgsqlDatabaseName(connectionString);
+            if (dbType == DatabaseType.Mysql)
+                return GetMysqlDatabaseName(connectionString);
 
             var filePath = GetFilePath(connectionString, dbType);
             return Path.GetFileName(filePath);

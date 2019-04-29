@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="5DAB40E8-A1D9-469E-9CBD-2768F771FBAC" Version="1.0.1" Language="en-US" Publisher="ErikEJ" />
-        <DisplayName>EF Core Power Tools (Local version)</DisplayName>
+        <Identity Id="f4c4712c-ceae-4803-8e52-0e2049d5de9f" Version="2.2.0" Language="en-US" Publisher="ErikEJ" />
+        <DisplayName>EF Core Power Tools</DisplayName>
         <Description xml:space="preserve">Useful design-time DbContext features, added to the Visual Studio Solution Explorer context menu.
 
 When right-clicking on a C# project, the following context menu functions are available:
@@ -20,14 +20,13 @@ About - Displays version and other diagnostic information about your Visual Stud
         <Tags>sql sqlite sqlce entityframework efcore codegeneration database</Tags>
     </Metadata>
     <Installation>
-        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[15.0.26730.3,16.0)" />
+        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[15.0.27130.0,17.0)" />
     </Installation>
     <Dependencies>
-        <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
-        <Dependency Id="Microsoft.VisualStudio.MPF.15.0" DisplayName="Visual Studio MPF 15.0" d:Source="Installed" Version="[15.0]" />
+        <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.7.1,)" />
     </Dependencies>
     <Prerequisites>
-        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0,16.0)" DisplayName="Visual Studio core editor" />
+        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0,)" DisplayName="Visual Studio core editor" />
     </Prerequisites>
     <Assets>
         <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />

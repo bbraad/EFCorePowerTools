@@ -168,11 +168,7 @@ namespace ReverseEngineer20
             }
             EnsureMigrationsAssembly(services, assembly);
 
-            //For 2.1 use:
-            //var scaffolder = services.GetRequiredService<IMigrationsScaffolder>();
-            //var migration = scaffolder.ScaffoldMigration(name, nameSpace, subNamespace, _language);
-
-            var scaffolder = services.GetRequiredService<MigrationsScaffolder>();
+            var scaffolder = services.GetRequiredService<IMigrationsScaffolder>();
             var migration = scaffolder.ScaffoldMigration(name, nameSpace);
 
             return scaffolder.Save(projectPath, migration, null);
@@ -200,7 +196,7 @@ namespace ReverseEngineer20
             var reporter = new OperationReporter(
                 new OperationReportHandler());
 
-#if CORE21
+#if CORE21 || CORE22 
             return new DbContextOperations(reporter, assembly, assembly, Array.Empty<string>());
 #else
             return new DbContextOperations(reporter, assembly, assembly);
@@ -222,7 +218,11 @@ namespace ReverseEngineer20
 #if CORE21
             return new DesignTimeServicesBuilder(assembly, reporter, Array.Empty<string>());
 #else
+#if CORE22
+            return new DesignTimeServicesBuilder(assembly, assembly, reporter, Array.Empty<string>());
+#else
             return new DesignTimeServicesBuilder(assembly, reporter);
+#endif
 #endif
         }
 

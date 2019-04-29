@@ -6,6 +6,8 @@ using VSLangProj;
 
 namespace EFCorePowerTools.Extensions
 {
+    using Shared.Enums;
+
     internal static class ProjectExtensions
     {
         public const int SOk = 0;
@@ -57,6 +59,10 @@ namespace EFCorePowerTools.Extensions
             {
                 providerPackage = "Npgsql.EntityFrameworkCore.PostgreSQL";
             }
+            if (dbType == DatabaseType.Mysql)
+            {
+                providerPackage = "Pomelo.EntityFrameworkCore.MySql";
+            }
 
             var vsProject = project.Object as VSProject;
             if (vsProject == null) return new Tuple<bool, string>(false, providerPackage);
@@ -78,6 +84,11 @@ namespace EFCorePowerTools.Extensions
         public static bool IsNetCore21(this Project project)
         {
             return project.Properties.Item("TargetFrameworkMoniker").Value.ToString().Contains(".NETCoreApp,Version=v2.1");
+        }
+
+        public static bool IsNetCore22(this Project project)
+        {
+            return project.Properties.Item("TargetFrameworkMoniker").Value.ToString().Contains(".NETCoreApp,Version=v2.2");
         }
 
         private static string GetOutputPath(Project project)
