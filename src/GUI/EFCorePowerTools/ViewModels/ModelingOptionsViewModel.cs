@@ -123,6 +123,8 @@
             Model.UseDataAnnotations = presets.UseDataAnnotations;
             Model.ProjectName = presets.ProjectName;
             Model.DacpacPath = presets.DacpacPath;
+			Model.UseFullNamespace = presets.UseFullNamespace;
+			Model.ExcludeStringLengthAttribute = presets.ExcludeStringLengthAttribute;
 
             Title = $"Generate EF Core Model in Project {Model.ProjectName}";
         }

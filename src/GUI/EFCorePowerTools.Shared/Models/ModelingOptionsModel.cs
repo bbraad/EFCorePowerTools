@@ -22,8 +22,10 @@
         private bool _useDataAnnotations;
         private string _projectName;
         private string _dacpacPath;
+		private bool _useFullNamespace;
+		private bool _excludeStringLengthAttribute;
 
-        public bool UseDataAnnotations
+		  public bool UseDataAnnotations
         {
             get => _useDataAnnotations;
             set
@@ -166,7 +168,31 @@
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+		public bool UseFullNamespace
+		{
+			get => _useFullNamespace;
+			set
+			{
+				if (value == _useFullNamespace) return;
+				_useFullNamespace = value;
+				OnPropertyChanged();
+			}
+		}
+
+		public bool ExcludeStringLengthAttribute
+		{
+			get => _excludeStringLengthAttribute;
+			set
+			{
+				if (value == _excludeStringLengthAttribute) return;
+				_excludeStringLengthAttribute = value;
+				OnPropertyChanged();
+			}
+		}
+
+
+
+		public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)

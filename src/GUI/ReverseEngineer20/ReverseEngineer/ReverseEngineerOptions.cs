@@ -32,8 +32,10 @@ namespace ReverseEngineer20
         [IgnoreDataMember]
         public List<Schema> CustomReplacers { get; set; }
         public string DefaultDacpacSchema { get; set; }
+		public bool UseFullNamespace { get; set; }
+		public bool ExcludeStringLengthAttribute { get; set; }
 
-        public static ReverseEngineerOptions FromV1(ReverseEngineerOptionsV1 v1)
+		public static ReverseEngineerOptions FromV1(ReverseEngineerOptionsV1 v1)
         {
             if (v1 == null)
                 throw new ArgumentNullException(nameof(v1));

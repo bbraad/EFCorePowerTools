@@ -18,11 +18,12 @@ namespace ReverseEngineer20.CustomPostProcessing
 {
 	class EGCustomChanges
 	{
-		internal static void Generate(IList<string> filesWithoutContectAndMergeFile, string connectionString, string filePath, bool excludeStringLengthAttribute)
+		internal static void Generate(IList<string> filesWithoutContextAndMergeFile, string connectionString, string filePath, bool excludeStringLengthAttribute, string contextName, string namespacePath)
 		{
-			UpdateFiles(filesWithoutContectAndMergeFile, excludeStringLengthAttribute);
-			CompilerResults cpResults = BuildAssembly(filesWithoutContectAndMergeFile);
+			UpdateFiles(filesWithoutContextAndMergeFile, excludeStringLengthAttribute);
+			CompilerResults cpResults = BuildAssembly(filesWithoutContextAndMergeFile);
 			CreateDbInfo(cpResults.CompiledAssembly.GetTypes(), connectionString, filePath);
+			CreateMyDbContext(cpResults.CompiledAssembly.GetTypes(), connectionString, filePath, contextName, namespacePath);
 		}
 
 		private static void UpdateFiles(IList<string> files, bool excludeStringLengthAttribute)
@@ -43,11 +44,11 @@ namespace ReverseEngineer20.CustomPostProcessing
 					resultLine = resultLine.Replace("&#230;", "æ");
 					mergedFile.AppendLine(resultLine);
 				}
-				
+
 				File.WriteAllText(file, mergedFile.ToString(), Encoding.UTF8);
 			}
 		}
-			
+
 
 		private static void CreateDbInfo(IEnumerable<Type> types, string connectionString, string filePath)
 		{
@@ -121,6 +122,11 @@ namespace ReverseEngineer20.CustomPostProcessing
 			WriteDbInfo(dbinfoLines, filePath);
 		}
 
+		/// <summary>
+		/// Write dbinfo lines to dbinfo.txt
+		/// </summary>
+		/// <param name="dbinfoLines"></param>
+		/// <param name="filePath"></param>
 		private static void WriteDbInfo(List<DbInfoLine> dbinfoLines, string filePath)
 		{
 			StringBuilder sb = new StringBuilder();
@@ -161,77 +167,6 @@ namespace ReverseEngineer20.CustomPostProcessing
 		}
 
 
-		//[Obsolete("Scaffold tilføjer allerede filerne til projektet, så det giver ikke mening at merge dem også, da de enkelte filer så skal fjernes fra projektet igen.")]
-		//private static StringBuilder CreateMergedClasses(IList<string> files, bool excludeStringLengthAttribute)
-		//{
-		//	bool isFirst = true;
-		//	Dictionary<string, Type> types = new Dictionary<string, Type>();
-		//	StringBuilder mergedFile = new StringBuilder();
-		//	foreach (string file in files)
-		//	{
-		//		var fileName = Path.GetFileNameWithoutExtension(file);
-
-		//		string[] typeLines = File.ReadAllLines(file);
-
-		//		bool startWriting = false;
-
-		//		foreach (string line in typeLines)
-		//		{
-		//			if (excludeStringLengthAttribute && line.Contains("[StringLength(")) //Vi ignorerer linjer med [StringLength(xxx)]
-		//			{
-		//				continue;
-		//			}
-
-		//			var resultLine = line.Replace("[Required]", "[Required(AllowEmptyStrings=true)]");
-		//			resultLine = resultLine.Replace("&#230;", "æ");
-
-		//			if (isFirst)
-		//			{
-
-		//				//Build using lines and namespace lines.
-		//				if (resultLine.StartsWith("}"))
-		//				{
-		//					//Ignore this line
-		//					isFirst = false;
-
-		//				}
-		//				else
-		//				{
-		//					mergedFile.AppendLine(resultLine);
-		//				}
-		//			}
-		//			else
-		//			{
-
-		//				if (resultLine.StartsWith("{"))
-		//				{
-		//					startWriting = true;
-		//				}
-		//				else if (resultLine.StartsWith("}"))
-		//				{
-		//					//Just ignore the line
-		//				}
-		//				else
-		//				{
-		//					if (startWriting)
-		//					{
-		//						mergedFile.AppendLine(resultLine);
-		//					}
-		//				}
-		//			}
-		//		}
-		//		mergedFile.AppendLine(""); //Empty line between classes.
-		//	}
-
-		//	mergedFile.AppendLine("}"); //End namespace
-
-		//	return mergedFile;
-		//}
-
-
-
-
-
 		private static CompilerResults BuildAssembly(IList<string> typePath)
 		{
 			CompilerParameters compilerparams = new CompilerParameters();
@@ -261,26 +196,57 @@ namespace ReverseEngineer20.CustomPostProcessing
 			var returnType = results.CompiledAssembly.DefinedTypes.Single(t => t.Name == typeName);
 			return returnType.AsType();
 		}
-	}
 
-
-
-	class DatabaseTable
-	{
-		public DatabaseTable()
+		private static void CreateMyDbContext(Type[] types, string connectionString, string filePath, string contextName, string namespaceName)
 		{
-			Columns = new Dictionary<string, string>();
-		}
-		public string Name { get; set; }
-		public string Schema { get; set; }
-		public Dictionary<string, string> Columns { get; set; }
-	}
+			string interfacename = $"I{contextName}";
+			string FILENAMEWITHEXSTENSION = $"{interfacename}Genereret.cs";
 
-	class DbInfoLine
-	{
-		public string Value1 { get; set; }
-		public string Value2 { get; set; }
-		public string Value3 { get; set; }
+			StringBuilder imydbcontextStrings = new StringBuilder();
+
+			imydbcontextStrings.AppendLine("#pragma warning disable 1591    //  Ignore \"Missing XML Comment\" warning");
+			imydbcontextStrings.AppendLine("using System;");
+			imydbcontextStrings.AppendLine("using System.Collections.Generic;");
+			imydbcontextStrings.AppendLine("using System.Data.Common;");
+			imydbcontextStrings.AppendLine("using Microsoft.EntityFrameworkCore;");
+			imydbcontextStrings.AppendLine(string.Empty);
+			imydbcontextStrings.AppendLine($"namespace {namespaceName}");
+			imydbcontextStrings.AppendLine("{");
+			imydbcontextStrings.AppendLine("\t/// <summary>");
+			imydbcontextStrings.AppendLine($"\t/// Auto-genereret {interfacename} fil.");
+			imydbcontextStrings.AppendLine("\t/// </summary>");
+			imydbcontextStrings.AppendLine($"\tpublic partial interface {interfacename} : IDisposable");
+			imydbcontextStrings.AppendLine("\t{");
+
+			foreach (var type in types)
+			{
+				imydbcontextStrings.AppendLine("\t\tDbSet<" + type.Name + "> " + type.Name + " { get; set; }");
+			}
+			imydbcontextStrings.AppendLine("\t}");
+			imydbcontextStrings.AppendLine("}");
+
+			File.WriteAllText(Path.Combine(filePath, FILENAMEWITHEXSTENSION), imydbcontextStrings.ToString());
+		}
+
+
+
+		class DatabaseTable
+		{
+			public DatabaseTable()
+			{
+				Columns = new Dictionary<string, string>();
+			}
+			public string Name { get; set; }
+			public string Schema { get; set; }
+			public Dictionary<string, string> Columns { get; set; }
+		}
+
+		class DbInfoLine
+		{
+			public string Value1 { get; set; }
+			public string Value2 { get; set; }
+			public string Value3 { get; set; }
+		}
 	}
 }
 

@@ -167,7 +167,9 @@ namespace EFCorePowerTools.Handlers
                     presets.Namespace = options.ProjectRootNamespace;
                     presets.OutputPath = options.OutputPath;
                     presets.SelectedTobeGenerated = options.SelectedToBeGenerated;
-                }
+					presets.UseFullNamespace = options.UseFullNamespace;
+					presets.ExcludeStringLengthAttribute = options.ExcludeStringLengthAttribute;
+				}
 
                 var modelDialog = _package.GetView<IModelingOptionsDialog>()
                                           .ApplyPresets(presets);
@@ -195,8 +197,10 @@ namespace EFCorePowerTools.Handlers
                     Dacpac = dacpacPath,
                     DefaultDacpacSchema = dacpacSchema,
                     Tables = pickTablesResult.Payload.ToList(),
-                    CustomReplacers = customNameOptions
-                };
+                    CustomReplacers = customNameOptions,
+						 UseFullNamespace = modelingOptionsResult.Payload.UseFullNamespace,
+						 ExcludeStringLengthAttribute = modelingOptionsResult.Payload.ExcludeStringLengthAttribute
+					 };
 
                 _package.Dte2.StatusBar.Text = "Generating code...";
 

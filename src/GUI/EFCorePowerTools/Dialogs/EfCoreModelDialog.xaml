@@ -8,7 +8,7 @@
                  xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
                  mc:Ignorable="d"
                  ShowInTaskbar="False"
-                 Height="550"
+                 Height="500"
                  Width="418"
                  WindowStartupLocation="CenterOwner"
                  ResizeMode="NoResize"
@@ -29,19 +29,19 @@
                 <ResourceDictionary>
                     <Style x:Key="GenerationOptionsCheckBoxStyle"
                            TargetType="CheckBox">
-                        <Setter Property="Margin" Value="0, 8, 0, 8"/>
+                        <Setter Property="Margin" Value="0,3,0,3"/>
                     </Style>
                     <Style x:Key="GenerationOptionsNamingCheckBoxStyle"
                            TargetType="CheckBox">
-                        <Setter Property="Margin" Value="5, 6, 5, 6"/>
+                        <Setter Property="Margin" Value="5,3"/>
                     </Style>
                     <Style x:Key="LastGenerationOptionsNamingCheckBoxStyle"
                            TargetType="CheckBox">
-                        <Setter Property="Margin" Value="5, 6, 5, 0"/>
+                        <Setter Property="Margin" Value="5,3,5,0"/>
                     </Style>
                     <Style TargetType="TextBox" x:Key="TextInputStyle">
-                        <Setter Property="Height" Value="26"/>
-                        <Setter Property="Margin" Value="0,2,0,15"/>
+                        <Setter Property="Height" Value="20"/>
+                        <Setter Property="Margin" Value="0,2,0,5"/>
                         <Setter Property="HorizontalAlignment" Value="Stretch"/>
                     </Style>
                     <Style TargetType="GroupBox" x:Key="NamingGroupBoxStyle">
@@ -69,19 +69,19 @@
 
     <Grid Margin="15, 5, 15, 10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="15" />
+            <RowDefinition Height="30" />
+            <RowDefinition Height="15" />
+            <RowDefinition Height="30" />
+            <RowDefinition Height="15" />
+            <RowDefinition Height="30" />
+            <RowDefinition Height="25" />
+            <RowDefinition Height="160" />
+            <RowDefinition Height="20" />
+            <RowDefinition Height="20" />
+            <RowDefinition Height="20" />
+            <RowDefinition Height="20" />
+            <RowDefinition Height="50" />
         </Grid.RowDefinitions>
 
         <dw:LiveTextBlock Grid.Row="0"
@@ -131,8 +131,16 @@
                 <CheckBox TabIndex="6"
                           Content="Replace Id with ID (experimental!)"
                           IsChecked="{Binding Model.ReplaceId}"
+                          Style="{StaticResource GenerationOptionsNamingCheckBoxStyle}"/>
+				<CheckBox TabIndex="7"
+                          Content="Combine namespace and model into full namespace"
+                          IsChecked="{Binding Model.UseFullNamespace}"
+                          Style="{StaticResource GenerationOptionsNamingCheckBoxStyle}"/>
+				<CheckBox TabIndex="8"
+                          Content="Exclude [StringLength] attribute"
+                          IsChecked="{Binding Model.ExcludeStringLengthAttribute}"
                           Style="{StaticResource LastGenerationOptionsNamingCheckBoxStyle}"/>
-            </StackPanel>
+			</StackPanel>
         </GroupBox>
         <CheckBox TabIndex="10"
                   Content="Use DataAnnotation attributes to configure the model"
