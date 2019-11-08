@@ -4,8 +4,8 @@
     using EnvDTE80;
     using ErikEJ.SqlCeToolbox.Helpers;
     using Microsoft.VisualStudio.Shell.Interop;
+    using ReverseEngineer20;
     using Shared.DAL;
-    using Shared.Enums;
     using Shared.Models;
 
     public class VisualStudioAccess : IVisualStudioAccess
@@ -18,11 +18,6 @@
         {
             _package = package;
             _dte2 = dte2;
-        }
-
-        void IVisualStudioAccess.NavigateToUrl(string url)
-        {
-            _dte2.ItemOperations.Navigate(url);
         }
 
         DatabaseConnectionModel IVisualStudioAccess.PromptForNewDatabaseConnection()

@@ -8,9 +8,7 @@ namespace EFCorePowerTools.Handlers
 {
     using System.Linq;
     using Contracts.Views;
-    using Dialogs;
-    using ReverseEngineer20.ReverseEngineer;
-    using Shared.Enums;
+    using ReverseEngineer20;
     using Shared.Models;
 
     internal class ServerDgmlHandler
@@ -63,7 +61,9 @@ namespace EFCorePowerTools.Handlers
                     return;
                 }
 
-                if (dbInfo.DatabaseType == DatabaseType.SQLCE35)
+                if (dbInfo.DatabaseType == DatabaseType.SQLCE35 
+                    || dbInfo.DatabaseType == DatabaseType.Mysql
+                    || dbInfo.DatabaseType == DatabaseType.Npgsql)
                 {
                     EnvDteHelper.ShowError($"Unsupported provider: {dbInfo.ServerVersion}");
                     return;
@@ -75,7 +75,7 @@ namespace EFCorePowerTools.Handlers
                     var tables = repository.GetAllTableNamesForExclusion();
                     foreach (var table in tables)
                     {
-                        predefinedTables.Add(new TableInformationModel(table, true));
+                        predefinedTables.Add(new TableInformationModel(table, true, false));
                     }
                 }
 

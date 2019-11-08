@@ -8,7 +8,8 @@ namespace EFCorePowerTools.Extensions
 {
     using Microsoft.VisualStudio.ProjectSystem;
     using Microsoft.VisualStudio.ProjectSystem.Properties;
-    using Shared.Enums;
+    using NuGet.ProjectModel;
+    using ReverseEngineer20;
 
     internal static class ProjectExtensions
     {
@@ -99,18 +100,25 @@ namespace EFCorePowerTools.Extensions
 
             bool hasDesign = false;
             string coreVersion = string.Empty;
+            var projectAssetsFile = project.GetCspProperty("ProjectAssetsFile");
 
-            var vsProject = project.Object as VSProject;
-            if (vsProject == null) return new Tuple<bool, string>(false, null);
-            for (var i = 1; i < vsProject.References.Count + 1; i++)
+            if (projectAssetsFile != null && File.Exists(projectAssetsFile))
             {
-                if (vsProject.References.Item(i).Name.Equals(designPackage))
+                var lockFile = LockFileUtilities.GetLockFile(projectAssetsFile, NuGet.Common.NullLogger.Instance);
+
+                if (lockFile != null)
                 {
-                    hasDesign = true;
-                }
-                if (vsProject.References.Item(i).Name.Equals(corePackage))
-                {
-                    coreVersion = vsProject.References.Item(i).Version;
+                    foreach (var lib in lockFile.Libraries)
+                    {
+                        if (lib.Name.Equals(corePackage))
+                        {
+                            coreVersion = lib.Version.ToString();
+                        }
+                        if (lib.Name.Equals(designPackage))
+                        {
+                            hasDesign = true;
+                        }
+                    }
                 }
             }
 
@@ -119,7 +127,12 @@ namespace EFCorePowerTools.Extensions
 
         public static bool IsNetCore(this Project project)
         {
-            return project.Properties.Item("TargetFrameworkMoniker").Value.ToString().Contains(".NETCoreApp,Version=v2.");
+            return project.Properties.Item("TargetFrameworkMoniker").Value.ToString().Contains(".NETCoreApp,Version=v");
+        }
+
+        public static bool IsNetCore21OrHigher(this Project project)
+        {
+            return IsNetCore21(project) || IsNetCore22(project) || IsNetCore30(project) || IsNetCore31(project);
         }
 
         public static bool IsNetCore21(this Project project)
@@ -130,6 +143,16 @@ namespace EFCorePowerTools.Extensions
         public static bool IsNetCore22(this Project project)
         {
             return project.Properties.Item("TargetFrameworkMoniker").Value.ToString().Contains(".NETCoreApp,Version=v2.2");
+        }
+
+        public static bool IsNetCore30(this Project project)
+        {
+            return project.Properties.Item("TargetFrameworkMoniker").Value.ToString().Contains(".NETCoreApp,Version=v3.0");
+        }
+
+        public static bool IsNetCore31(this Project project)
+        {
+            return project.Properties.Item("TargetFrameworkMoniker").Value.ToString().Contains(".NETCoreApp,Version=v3.1");
         }
 
         private static string GetOutputPath(Project project)

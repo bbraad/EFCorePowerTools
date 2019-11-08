@@ -57,7 +57,7 @@
                 if (Equals(value, _searchText)) return;
                 _searchText = value;
                 RaisePropertyChanged();
-                HandleSearchTextChange(value);
+                HandleSearchTextChangeAsync(value);
             }
         }
 
@@ -74,7 +74,7 @@
             LoadSelectionCommand = new RelayCommand(LoadSelection_Executed, LoadSelection_CanExecute);
             OkCommand = new RelayCommand(Ok_Executed, Ok_CanExecute);
             CancelCommand = new RelayCommand(Cancel_Executed);
-            
+
             Tables = new ObservableCollection<ITableInformationViewModel>();
             Tables.CollectionChanged += Tables_CollectionChanged;
 
@@ -116,7 +116,7 @@
             var lines = _fileSystemAccess.ReadAllLines(resultFileName);
             var parsedTables = new List<TableInformationModel>();
             foreach (var line in lines)
-                parsedTables.Add(new TableInformationModel(line, true));
+                parsedTables.Add(new TableInformationModel(line, true, false));
 
             foreach (var t in Tables)
             {
@@ -165,11 +165,11 @@
                                              .All(m => m.IsSelected)
                                            ? true
                                            : Tables.All(m => !m.IsSelected)
-                                               ? (bool?) false
+                                               ? (bool?)false
                                                : null;
         }
 
-        private async void HandleSearchTextChange(string text)
+        private async void HandleSearchTextChangeAsync(string text)
         {
             await Task.Delay(500); // Add a delay (like a debounce) so that not every character change triggers a search
             if (text != SearchText)
@@ -186,9 +186,9 @@
 
         private static void PredefineSelection(ITableInformationViewModel t)
         {
-            var unSelect = t.Model.Name.StartsWith("__")
-                        || t.Model.Name.StartsWith("dbo.__")
-                        || t.Model.Name.EndsWith(".sysdiagrams");
+            var unSelect = t.Model.Name.StartsWith("[__")
+                        || t.Model.Name.StartsWith("[dbo].[__")
+                        || t.Model.Name.EndsWith(".[sysdiagrams]");
             if (unSelect) t.IsSelected = false;
         }
 

@@ -1,5 +1,4 @@
-﻿// https://github.com/bricelam/EFCore.Pluralizer
-// Copyright (c) Microsoft Open Technologies, Inc. and others. All rights reserved.
+﻿// Copyright (c) Microsoft Open Technologies, Inc. and others. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,7 +32,6 @@ namespace Bricelam.EntityFrameworkCore.Design
     public class Pluralizer : IPluralizer
     {
         readonly IReadOnlyDictionary<string, string> _irregularPluralsReverseList;
-        readonly IReadOnlyDictionary<string, string> _irregularVerbReverseList;
         readonly IReadOnlyDictionary<string, string> _assimilatedClassicalInflectionReverseList;
         readonly IReadOnlyDictionary<string, string> _oSuffixReverseList;
         readonly IReadOnlyDictionary<string, string> _classicalInflectionReverseList;
@@ -57,12 +55,11 @@ namespace Bricelam.EntityFrameworkCore.Design
             "molasses", "shambles", "shingles"
         };
 
-        readonly IReadOnlyDictionary<string, string> _irregularVerbList = new Dictionary<string, string>
+        readonly IReadOnlyDictionary<string, string> _irregularVerbReverseList = new Dictionary<string, string>
         {
-            { "am", "are" },
-            { "is", "are" },
-            { "was", "were" },
-            { "has", "have" }
+            { "are", "am" },
+            { "were", "was" },
+            { "have", "has" }
         };
 
         readonly IEnumerable<string> _pronounList = new HashSet<string>
@@ -77,7 +74,9 @@ namespace Bricelam.EntityFrameworkCore.Design
 
         readonly IReadOnlyDictionary<string, string> _irregularPluralsList = new Dictionary<string, string>
         {
+            { "brother", "brothers" },
             { "child", "children" },
+            { "cow", "cows" },
             { "ephemeris", "ephemerides" },
             { "genie", "genies" },
             { "money", "moneys" },
@@ -124,13 +123,10 @@ namespace Bricelam.EntityFrameworkCore.Design
             { "house", "houses" },
             { "valve", "valves" },
             { "cloth", "clothes" },
-            { "bluetooth", "bluetooths"},
-            { "bigfoot", "bigfoots"},
-            { "goosefoot", "goosefoots" }
         };
 
         readonly IReadOnlyDictionary<string, string> _assimilatedClassicalInflectionList = new Dictionary<string, string>
-        {
+                {
             { "alumna", "alumnae" },
             { "alga", "algae" },
             { "vertebra", "vertebrae" },
@@ -298,6 +294,7 @@ namespace Bricelam.EntityFrameworkCore.Design
             { "sinus", "sinus" },
             { "coitus", "coitus" },
             { "plexus", "plexus" },
+            { "status", "status" },
             { "hiatus", "hiatus" },
             { "afreet", "afreeti" },
             { "afrit", "afriti" },
@@ -309,15 +306,11 @@ namespace Bricelam.EntityFrameworkCore.Design
         };
 
         // this list contains all the plural words that being treated as singular form, for example, "they" -> "they"
-        readonly IEnumerable<string> _pluralWhiteList = new HashSet<string>
+        readonly IEnumerable<string> _knownConflictingPluralList = new HashSet<string>
         {
-            "they", "them", "their"
+            "they", "them", "their", "have", "were", "yourself", "are"
         };
 
-        readonly IEnumerable<string> _singularWhiteList = new HashSet<string>
-        {
-            "is"
-        };
         // this list contains the words ending with "se" and we special case these words since we need to add a rule for "ses"
         // singularize to "s"
         readonly IReadOnlyDictionary<string, string> _wordsEndingWithSeReverseList = new Dictionary<string, string>
@@ -413,8 +406,7 @@ namespace Bricelam.EntityFrameworkCore.Design
             { "galvanises" , "galvanise" },
             { "princesses" , "princesse" },
             { "universes" , "universe" },
-            { "workhorses" , "workhorse" },
-            { "responses", "response"}
+            { "workhorses" , "workhorse" }
         };
 
         readonly IReadOnlyDictionary<string, string> _wordsEndingWithSisReverseList = new Dictionary<string, string>
@@ -456,7 +448,6 @@ namespace Bricelam.EntityFrameworkCore.Design
         /// </summary>
         public Pluralizer()
         {
-            _irregularVerbReverseList = Reverse(_irregularVerbList);
             _irregularPluralsReverseList = Reverse(_irregularPluralsList);
             _assimilatedClassicalInflectionReverseList = Reverse(_assimilatedClassicalInflectionList);
             _oSuffixReverseList = Reverse(_oSuffixList);
@@ -468,15 +459,14 @@ namespace Bricelam.EntityFrameworkCore.Design
                 .Concat(_classicalInflectionList.Keys)
                 .Concat(_irregularVerbReverseList.Values)
                 .Concat(_uninflectiveWords)
-                .Concat(_singularWhiteList));
+                .Except(_knownConflictingPluralList)); // see the _knowConflictingPluralList comment above
             _knownPluralWords = new HashSet<string>(
                 _irregularPluralsList.Values
                 .Concat(_assimilatedClassicalInflectionList.Values)
                 .Concat(_oSuffixList.Values)
                 .Concat(_classicalInflectionList.Values)
                 .Concat(_irregularVerbReverseList.Keys)
-                .Concat(_uninflectiveWords))
-                .Concat(_pluralWhiteList);
+                .Concat(_uninflectiveWords));
         }
 
         // CONSIDER optimize the algorithm by collecting all the special cases to one single dictionary
@@ -492,12 +482,7 @@ namespace Bricelam.EntityFrameworkCore.Design
         public string Singularize(string word)
             => Capitalize(word, InternalSingularize);
 
-        private string FirstLetterCaseSameAsOriginal(string originalWord, string word)
-        {
-            return char.IsUpper(originalWord[0]) ? char.ToUpperInvariant(word[0]) + word.Substring(1) : word;
-        }
-
-        private string InternalPluralize(string word)
+        string InternalPluralize(string word)
         {
             if (IsNoOpWord(word))
                 return word;
@@ -516,14 +501,11 @@ namespace Bricelam.EntityFrameworkCore.Design
             if (_knownPluralWords.Contains(suffixWord.ToLowerInvariant()) || IsPlural(suffixWord))
                 return prefixWord + suffixWord;
 
-            string plural;
-            if (_irregularVerbList.TryGetValue(suffixWord.ToLowerInvariant(), out plural))
-                return prefixWord + FirstLetterCaseSameAsOriginal(suffixWord, plural);
-
             // handle irregular plurals, e.g. "ox" -> "oxen"
-            if (_irregularPluralsList.TryGetValue(suffixWord.ToLowerInvariant(), out plural))
-                return prefixWord + FirstLetterCaseSameAsOriginal(suffixWord, plural);
+            if (_irregularPluralsList.TryGetValue(suffixWord, out var plural))
+                return prefixWord + plural;
 
+            // handle irregular inflections for common suffixes, e.g. "mouse" -> "mice"
             if (TryInflectOnSuffixInWord(
                 suffixWord,
                 new[] { "man" },
@@ -532,7 +514,6 @@ namespace Bricelam.EntityFrameworkCore.Design
             {
                 return prefixWord + newSuffixWord;
             }
-            // handle irregular inflections for common suffixes, e.g. "mouse" -> "mice"
             if (TryInflectOnSuffixInWord(
                 suffixWord,
                 new[] { "louse", "mouse" },
@@ -567,7 +548,7 @@ namespace Bricelam.EntityFrameworkCore.Design
             }
             if (TryInflectOnSuffixInWord(
                 suffixWord,
-                new[] { "zoon", "zoan" },
+                new[] { "zoon" },
                 (s) => s.Remove(s.Length - 3, 3) + "oa",
                 out newSuffixWord))
             {
@@ -607,17 +588,26 @@ namespace Bricelam.EntityFrameworkCore.Design
             {
                 return prefixWord + newSuffixWord;
             }
+            if (TryInflectOnSuffixInWord(
+                suffixWord,
+                new[] { "inx", "anx", "ynx" },
+                (s) => s.Remove(s.Length - 1, 1) + "ges",
+                out newSuffixWord))
+            {
+                return prefixWord + newSuffixWord;
+            }
 
             // [cs]h and ss that take es as plural form
             if (TryInflectOnSuffixInWord(
                 suffixWord,
-                new[] { "ch", "sh", "ss", "us" },
+                new[] { "ch", "sh", "ss" },
                 (s) => s + "es",
                 out newSuffixWord))
             {
                 return prefixWord + newSuffixWord;
             }
 
+            // f, fe that take ves as plural form
             if (TryInflectOnSuffixInWord(
                 suffixWord,
                 new[] { "alf", "elf", "olf", "eaf", "arf" },
@@ -626,8 +616,6 @@ namespace Bricelam.EntityFrameworkCore.Design
             {
                 return prefixWord + newSuffixWord;
             }
-
-            // f, fe that take ves as plural form
             if (TryInflectOnSuffixInWord(
                 suffixWord,
                 new[] { "nife", "life", "wife" },
@@ -694,21 +682,21 @@ namespace Bricelam.EntityFrameworkCore.Design
                 return prefixWord + suffixWord;
 
             // handle simple irregular verbs, e.g. was -> were
-            if (_irregularVerbReverseList.TryGetValue(suffixWord.ToLowerInvariant(), out var singular))
-                return prefixWord + FirstLetterCaseSameAsOriginal(suffixWord, singular);
+            if (_irregularVerbReverseList.TryGetValue(suffixWord, out var singular))
+                return prefixWord + singular;
 
             // handle irregular plurals, e.g. "ox" -> "oxen"
-            if (_irregularPluralsReverseList.TryGetValue(suffixWord.ToLowerInvariant(), out singular))
-                return prefixWord + FirstLetterCaseSameAsOriginal(suffixWord, singular);
+            if (_irregularPluralsReverseList.TryGetValue(suffixWord, out singular))
+                return prefixWord + singular;
 
             // handle singularization for words ending with sis and pluralized to ses,
             // e.g. "ses" -> "sis"
-            if (_wordsEndingWithSisReverseList.TryGetValue(suffixWord.ToLowerInvariant(), out singular))
-                return prefixWord + FirstLetterCaseSameAsOriginal(suffixWord, singular);
+            if (_wordsEndingWithSisReverseList.TryGetValue(suffixWord, out singular))
+                return prefixWord + singular;
 
             // handle words ending with se, e.g. "ses" -> "se"
-            if (_wordsEndingWithSeReverseList.TryGetValue(suffixWord.ToLowerInvariant(), out singular))
-                return prefixWord + FirstLetterCaseSameAsOriginal(suffixWord, singular);
+            if (_wordsEndingWithSeReverseList.TryGetValue(suffixWord, out singular))
+                return prefixWord + singular;
 
             // handle irregular inflections for common suffixes, e.g. "mouse" -> "mice"
             if (TryInflectOnSuffixInWord(
@@ -904,39 +892,14 @@ namespace Bricelam.EntityFrameworkCore.Design
         // separate one combine word in to two parts, prefix word and the last word(suffix word)
         static string GetSuffixWord(string word, out string prefixWord)
         {
-            var suffix = ExtractSuffixByLastSpace(word, out string firstPrefixWord);
-
-            suffix = ExtractSuffixByLastUpperCase(suffix, out string secondPrefixWord);
-
-            prefixWord = firstPrefixWord + secondPrefixWord;
-
-            return suffix;
-        }
-
-        static string ExtractSuffixByLastSpace(string word, out string prefixWord)
-        {
+            // use the last space to separate the words
             var lastSpaceIndex = word.LastIndexOf(' ');
             prefixWord = word.Substring(0, lastSpaceIndex + 1);
 
+            // CONSIDER(leil): use capital letters to separate the words
             return word.Substring(lastSpaceIndex + 1);
         }
 
-        static string ExtractSuffixByLastUpperCase(string word, out string prefixWord)
-        {
-            if (!word.Any(x => char.IsUpper(x)))
-            {
-                prefixWord = string.Empty;
-                return word;
-            }
-
-            var lastUpperCaseChar = word.Reverse().First(x => char.IsUpper(x));
-            var lastUpperCaseIndex = word.LastIndexOf(lastUpperCaseChar);
-
-            prefixWord = word.Substring(0, lastUpperCaseIndex);
-
-            return word.Substring(lastUpperCaseIndex);
-
-        }
         static bool IsCapitalized(string word)
             => !string.IsNullOrEmpty(word) && char.IsUpper(word, 0);
 
@@ -961,7 +924,7 @@ namespace Bricelam.EntityFrameworkCore.Design
            Func<string, string> operationOnWord,
            out string newWord)
         {
-            if (!DoesWordContainSuffix(word.ToLowerInvariant(), suffixes))
+            if (!DoesWordContainSuffix(word, suffixes))
             {
                 newWord = null;
 

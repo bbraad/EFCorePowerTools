@@ -34,12 +34,18 @@ namespace EFCorePowerTools.Extensions
 
         public static string Write(this ReverseEngineerOptions options)
         {
-            var ms = new MemoryStream();
-            var ser = new DataContractJsonSerializer(typeof(ReverseEngineerOptions));
-            ser.WriteObject(ms, options);
-            byte[] json = ms.ToArray();
-            ms.Close();
-            return Encoding.UTF8.GetString(json, 0, json.Length);
+            using (var ms = new MemoryStream())
+            {
+                using (var writer = JsonReaderWriterFactory.CreateJsonWriter(ms, Encoding.UTF8, true, true, "   "))
+                {
+                    var serializer = new DataContractJsonSerializer(typeof(ReverseEngineerOptions));
+                    serializer.WriteObject(writer, options);
+                    writer.Flush();
+                }
+
+                var json = ms.ToArray();
+                return Encoding.UTF8.GetString(json, 0, json.Length);
+            }
         }
 
         private static bool TryRead<T>(string optionsPath, out T deserialized) where T : class, new()

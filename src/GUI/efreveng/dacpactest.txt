@@ -1,0 +1,35 @@
+{
+   "ConnectionString": null,
+   "ContextClassName": "DacpacContext",
+   "CustomReplacers": null,
+   "Dacpac": "C:\\Code\\EFCorePowerTools\\src\\GUI\\UnitTests\\ChinookView.dacpac",
+   "DatabaseType": 3,
+   "DefaultDacpacSchema": null,
+   "DoNotCombineNamespace": false,
+   "IdReplace": false,
+   "IncludeConnectionString": false,
+   "OutputPath": null,
+   "ProjectPath": "C:\\Temp\\Test\\",
+   "ProjectRootNamespace": "ConsoleApp2",
+   "SelectedHandlebarsLanguage": 0,
+   "SelectedToBeGenerated": 0,
+   "Tables": [
+      {
+         "HasPrimaryKey": true,
+         "Name": "dbo.Album"
+      },
+	  {
+         "HasPrimaryKey": false,
+         "Name": "dbo.AlbumView"
+      },
+      {
+         "HasPrimaryKey": true,
+         "Name": "dbo.Artist"
+      }
+   ],
+   "UseDatabaseNames": false,
+   "UseFluentApiOnly": true,
+   "UseHandleBars": false,
+   "UseInflector": true,
+   "UseLegacyPluralizer": false
+}

@@ -25,6 +25,7 @@
 
         public ModelingOptionsModel Model { get; }
         public IReadOnlyList<string> GenerationModeList { get; }
+        public IReadOnlyList<string> HandlebarsLanguageList { get; }
 
         public string Title
         {
@@ -52,6 +53,7 @@
         {
             _visualStudioAccess = visualStudioAccess;
             Title = string.Empty;
+            MayIncludeConnectionString = true;
 
             LoadedCommand = new RelayCommand(Loaded_Executed);
             OkCommand = new RelayCommand(Ok_Executed);
@@ -65,11 +67,16 @@
                 "DbContext only",
                 "EntityTypes only"
             };
+            HandlebarsLanguageList = new[]
+            {
+                "C#",
+                "TypeScript"
+            };
         }
 
         private void Loaded_Executed()
         {
-            Model.SelectedTobeGenerated = 0;
+            Model.SelectedToBeGenerated = 0;
         }
 
         private void Ok_Executed()
@@ -104,6 +111,11 @@
                         MayIncludeConnectionString = false;
                         Model.IncludeConnectionString = false;
                     }
+                    else
+                    {
+                        MayIncludeConnectionString = true;
+                    }
+
                     break;
             }
         }
@@ -111,14 +123,19 @@
         void IModelingOptionsViewModel.ApplyPresets(ModelingOptionsModel presets)
         {
             Model.InstallNuGetPackage = presets.InstallNuGetPackage;
-            Model.SelectedTobeGenerated = presets.SelectedTobeGenerated;
+            Model.SelectedToBeGenerated = presets.SelectedToBeGenerated;
+            Model.SelectedHandlebarsLanguage = presets.SelectedHandlebarsLanguage;
             Model.IncludeConnectionString = presets.IncludeConnectionString;
             Model.UseHandelbars = presets.UseHandelbars;
             Model.ReplaceId = presets.ReplaceId;
+            Model.DoNotCombineNamespace = presets.DoNotCombineNamespace;
             Model.UsePluralizer = presets.UsePluralizer;
             Model.UseDatabaseNames = presets.UseDatabaseNames;
             Model.Namespace = presets.Namespace;
             Model.OutputPath = presets.OutputPath;
+            Model.OutputContextPath = presets.OutputContextPath;
+            Model.ModelNamespace = presets.ModelNamespace;
+            Model.ContextNamespace = presets.ContextNamespace;
             Model.ModelName = presets.ModelName;
             Model.UseDataAnnotations = presets.UseDataAnnotations;
             Model.ProjectName = presets.ProjectName;

@@ -142,6 +142,15 @@
     <Compile Include="ViewModels\TableInformationViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="..\packages\Microsoft.VisualStudio.ProjectSystem.16.0.374-pre\lib\net46\Microsoft.VisualStudio.ProjectSystem.dll">
+      <Link>Microsoft.VisualStudio.ProjectSystem.dll</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="..\packages\Microsoft.VisualStudio.ProjectSystem.16.0.374-pre\lib\net46\Microsoft.VisualStudio.ProjectSystem.VS.dll">
+      <Link>Microsoft.VisualStudio.ProjectSystem.VS.dll</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Dialogs\TableWarning_16x.png" />
     <Content Include="efpt\2.1.0\efpt.exe">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
@@ -160,26 +169,23 @@
     <Content Include="efpt\2.2.0\Microsoft.EntityFrameworkCore.Design.dll">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="efpt\2.2.1\efpt.exe">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="efpt\2.2.1\Microsoft.EntityFrameworkCore.Design.dll">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="efpt\2.2.2\efpt.exe">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="efpt\2.2.2\Microsoft.EntityFrameworkCore.Design.dll">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
     <Content Include="efpt\2.2.4\efpt.exe">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="efpt\2.2.4\Microsoft.EntityFrameworkCore.Design.dll" />
+    <Content Include="efpt\2.2.4\Microsoft.EntityFrameworkCore.Design.dll">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="efpt\2.2.6\efpt.exe">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="efpt\2.2.6\Microsoft.EntityFrameworkCore.Design.dll">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="e_sqlite3.dll">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="Resources\7.png" />
+    <Resource Include="Resources\TableWarning_16x.png" />
     <Resource Include="Resources\StatusInvalid_16x.png" />
     <Resource Include="Resources\Unicorn.png" />
     <EmbeddedResource Include="..\ErikEJ.EntityFrameworkCore.DgmlBuilder\template.dgml">
@@ -203,17 +209,22 @@
       <Link>efpt22.exe.zip</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Content Include="..\lib\efpt30.exe.zip">
+      <Link>efpt30.exe.zip</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="..\lib\efreveng.exe.zip">
+      <Link>efreveng.exe.zip</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <None Include="efpt.renaming.json" />
     <Content Include="efpt\2.2.0\efpt.exe.config">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="efpt\2.2.1\efpt.exe.config">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="efpt\2.2.2\efpt.exe.config">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
     <Content Include="efpt\2.2.4\efpt.exe.config">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="efpt\2.2.6\efpt.exe.config">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <None Include="Key.snk" />
@@ -241,6 +252,10 @@
     <ProjectReference Include="..\EFCorePowerTools.Shared\EFCorePowerTools.Shared.csproj">
       <Project>{2BD0C616-7126-4E12-A37D-A08B04BBF5E9}</Project>
       <Name>EFCorePowerTools.Shared</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RevEng.Shared\RevEng.Shared.csproj">
+      <Project>{d4594a0c-b02f-469d-9521-f0bdd5a30fc0}</Project>
+      <Name>RevEng.Shared</Name>
     </ProjectReference>
     <ProjectReference Include="..\ReverseEngineer20\ReverseEngineer20.csproj">
       <Project>{4c0f2979-fcd9-4e93-8e4f-2a43055d42fe}</Project>
@@ -381,7 +396,10 @@
       <HintPath>..\packages\Microsoft.VisualStudio.CoreUtility.15.0.26606\lib\net45\Microsoft.VisualStudio.CoreUtility.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.VisualStudio.Data.Core, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.VisualStudio.Data.Core, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\References\2010\Microsoft.VisualStudio.Data.Core.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.Data.Services, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\References\2010\Microsoft.VisualStudio.Data.Services.dll</HintPath>
@@ -566,7 +584,8 @@
     </Reference>
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
-    <Reference Include="System.Data.SQLite, Version=1.0.107.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=x86">
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data.SQLite, Version=1.0.110.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=x86">
       <HintPath>..\lib\System.Data.SQLite.dll</HintPath>
     </Reference>
     <Reference Include="System.Design" />

@@ -1,247 +1,201 @@
-﻿using EFCore.SqlCe.Design.Internal;
-using EFCorePowerTools.Shared.Models;
-using EntityFrameworkCore.Scaffolding.Handlebars;
-using Microsoft.EntityFrameworkCore.Design;
+﻿using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.EntityFrameworkCore.Scaffolding;
-using Microsoft.EntityFrameworkCore.Scaffolding.Internal;
-using Microsoft.EntityFrameworkCore.Sqlite.Design.Internal;
-using Microsoft.EntityFrameworkCore.SqlServer.Design.Internal;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Design.Internal;
-using Pomelo.EntityFrameworkCore.MySql.Design.Internal;
-using ReverseEngineer20.CustomPostProcessing;
 using ReverseEngineer20.ReverseEngineer;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace ReverseEngineer20
 {
-	public class EfCoreReverseEngineer
-	{
-		public EfCoreReverseEngineerResult GenerateFiles(ReverseEngineerOptions reverseEngineerOptions)
-		{
-			var errors = new List<string>();
-			var warnings = new List<string>();
-			var reporter = new OperationReporter(
-				 new OperationReportHandler(
-					  m => errors.Add(m),
-					  m => warnings.Add(m)));
+    public class EfCoreReverseEngineer
+    {
+        public ReverseEngineerResult GenerateFiles(ReverseEngineerOptions reverseEngineerOptions, bool includeViews)
+        {
+            if (includeViews)
+            {
+                return LaunchExternalRunner(reverseEngineerOptions);
+            }
 
-			// Add base services for scaffolding
-			var serviceCollection = new ServiceCollection();
+            var errors = new List<string>();
+            var warnings = new List<string>();
+            var reporter = new OperationReporter(
+                new OperationReportHandler(
+                    m => errors.Add(m),
+                    m => warnings.Add(m)));
 
-			serviceCollection
-				 .AddEntityFrameworkDesignTimeServices()
-				 .AddSingleton<IOperationReporter, OperationReporter>()
-				 .AddSingleton<IOperationReportHandler, OperationReportHandler>();
+            var serviceProvider = ServiceProviderBuilder.Build(reverseEngineerOptions);
+            var scaffolder = serviceProvider.GetService<IReverseEngineerScaffolder>();
 
-			if (reverseEngineerOptions.UseHandleBars)
-			{
-				//TODO Consider being selective based on SelectedToBeGenerated
-				serviceCollection.AddHandlebarsScaffolding();
-				serviceCollection.AddSingleton<ITemplateFileService>(provider => new CustomTemplateFileService(reverseEngineerOptions.ProjectPath));
-			}
+            var schemas = new List<string>();
+            if (reverseEngineerOptions.DefaultDacpacSchema != null)
+            {
+                schemas.Add(reverseEngineerOptions.DefaultDacpacSchema);
+            }
 
-			if (reverseEngineerOptions.CustomReplacers != null)
-			{
-				serviceCollection.AddSingleton<ICandidateNamingService>(provider => new ReplacingCandidateNamingService(reverseEngineerOptions.CustomReplacers));
-			}
+            var outputDir = reverseEngineerOptions.OutputPath != null
+               ? Path.GetFullPath(Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputPath))
+               : reverseEngineerOptions.ProjectPath;
 
-			if (reverseEngineerOptions.UseInflector)
-			{
-				serviceCollection.AddSingleton<IPluralizer, InflectorPluralizer>();
-			}
+            var outputContextDir = reverseEngineerOptions.OutputContextPath != null
+                ? Path.GetFullPath(Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputContextPath))
+                : outputDir;
 
-			// Add database provider services
-			switch (reverseEngineerOptions.DatabaseType)
-			{
-				case DatabaseType.SQLCE35:
-					throw new NotImplementedException();
-				case DatabaseType.SQLCE40:
-					var sqlCeProvider = new SqlCeDesignTimeServices();
-					sqlCeProvider.ConfigureDesignTimeServices(serviceCollection);
-					break;
-				case DatabaseType.SQLServer:
-					var provider = new SqlServerDesignTimeServices();
-					provider.ConfigureDesignTimeServices(serviceCollection);
+            var modelNamespace = reverseEngineerOptions.ModelNamespace != null
+                ? reverseEngineerOptions.ProjectRootNamespace + "." + reverseEngineerOptions.ModelNamespace
+                : PathHelper.GetNamespaceFromOutputPath(outputDir, reverseEngineerOptions.ProjectPath, reverseEngineerOptions.ProjectRootNamespace);
 
-					var spatial = new SqlServerNetTopologySuiteDesignTimeServices();
-					spatial.ConfigureDesignTimeServices(serviceCollection);
+            var contextNamespace = reverseEngineerOptions.ContextNamespace != null
+                ? reverseEngineerOptions.ProjectRootNamespace + "." + reverseEngineerOptions.ContextNamespace
+                : PathHelper.GetNamespaceFromOutputPath(outputContextDir, reverseEngineerOptions.ProjectPath, reverseEngineerOptions.ProjectRootNamespace);
 
-					if (!string.IsNullOrEmpty(reverseEngineerOptions.Dacpac))
-					{
-						serviceCollection.AddSingleton<IDatabaseModelFactory, SqlServerDacpacDatabaseModelFactory>();
-					}
-					break;
-				case DatabaseType.Npgsql:
-					var npgsqlProvider = new NpgsqlDesignTimeServices();
-					npgsqlProvider.ConfigureDesignTimeServices(serviceCollection);
-					break;
-				case DatabaseType.Mysql:
-					var mysqlProvider = new MySqlDesignTimeServices();
-					mysqlProvider.ConfigureDesignTimeServices(serviceCollection);
-					break;
-				case DatabaseType.SQLite:
-					var sqliteProvider = new SqliteDesignTimeServices();
-					sqliteProvider.ConfigureDesignTimeServices(serviceCollection);
-					break;
-				default:
-					throw new ArgumentOutOfRangeException();
-			}
+            var modelOptions = new ModelReverseEngineerOptions
+            {
+                UseDatabaseNames = reverseEngineerOptions.UseDatabaseNames
+            };
 
-			var serviceProvider = serviceCollection.BuildServiceProvider();
-			var scaffolder = serviceProvider.GetService<IReverseEngineerScaffolder>();
+            var codeOptions = new ModelCodeGenerationOptions
+            {
+                UseDataAnnotations = !reverseEngineerOptions.UseFluentApiOnly
+            };
 
-			var schemas = new List<string>();
-			if (reverseEngineerOptions.DefaultDacpacSchema != null)
-			{
-				schemas.Add(reverseEngineerOptions.DefaultDacpacSchema);
-			}
+            var scaffoldedModel = scaffolder.ScaffoldModel(
+                    reverseEngineerOptions.Dacpac != null
+                        ? reverseEngineerOptions.Dacpac
+                        : reverseEngineerOptions.ConnectionString,
+                    reverseEngineerOptions.Tables.Select(m => m.Name).ToArray(),
+                    schemas,
+                    modelNamespace,
+                    "C#",
+                    outputContextDir,
+                    reverseEngineerOptions.ContextClassName,
+                    modelOptions,
+                    codeOptions);
 
-			var @namespace = reverseEngineerOptions.ProjectRootNamespace;
+            var filePaths = scaffolder.Save(
+                scaffoldedModel,
+                outputDir,
+                overwriteFiles: true);
 
-			if (reverseEngineerOptions.UseFullNamespace && !string.IsNullOrEmpty(reverseEngineerOptions.OutputPath))
-			{
-				@namespace += "." + reverseEngineerOptions.OutputPath.Replace(Path.DirectorySeparatorChar, '.').Replace(Path.AltDirectorySeparatorChar, '.');
-			}
-			var modelOptions = new ModelReverseEngineerOptions
-			{
-				UseDatabaseNames = reverseEngineerOptions.UseDatabaseNames
-			};
+            PostProcessContext(filePaths.ContextFile, reverseEngineerOptions, modelNamespace, contextNamespace);
 
-			var codeOptions = new ModelCodeGenerationOptions
-			{
-				UseDataAnnotations = !reverseEngineerOptions.UseFluentApiOnly
-			};
+            foreach (var file in filePaths.AdditionalFiles)
+            {
+                PostProcess(file, reverseEngineerOptions.IdReplace);
+            }
+            PostProcess(filePaths.ContextFile, reverseEngineerOptions.IdReplace);
 
-			List<string> navne = reverseEngineerOptions.Tables.Select(m => m.Name).ToList();
-			navne.Sort(StringComparer.CurrentCultureIgnoreCase);
-			var scaffoldedModel = scaffolder.ScaffoldModel(
-					  reverseEngineerOptions.Dacpac != null
-							? reverseEngineerOptions.Dacpac
-							: reverseEngineerOptions.ConnectionString,
-					  navne,
-					  schemas,
-					  @namespace,
-					  "C#",
-					  null,
-					  reverseEngineerOptions.ContextClassName,
-					  modelOptions,
-					  codeOptions);
+            var result = new ReverseEngineerResult
+            {
+                EntityErrors = errors,
+                EntityWarnings = warnings,
+                EntityTypeFilePaths = filePaths.AdditionalFiles,
+                ContextFilePath = filePaths.ContextFile,
+            };
 
-			var filePaths = scaffolder.Save(
-				 scaffoldedModel,
-				 Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputPath ?? string.Empty),
-				 overwriteFiles: true);
+            return result;
+        }
 
-			PostProcessContext(filePaths.ContextFile, reverseEngineerOptions);
+        private ReverseEngineerResult LaunchExternalRunner(ReverseEngineerOptions options)
+        {
+            var commandOptions = new ReverseEngineerCommandOptions
+            {
+                ConnectionString = options.ConnectionString,
+                ContextClassName = options.ContextClassName,
+                CustomReplacers = options.CustomReplacers,
+                Dacpac = options.Dacpac,
+                DatabaseType = options.DatabaseType,
+                DefaultDacpacSchema = options.DefaultDacpacSchema,
+                DoNotCombineNamespace = options.DoNotCombineNamespace,
+                IdReplace = options.IdReplace,
+                IncludeConnectionString = options.IncludeConnectionString,
+                OutputPath = options.OutputPath,
+                ContextNamespace = options.ContextNamespace,
+                ModelNamespace = options.ModelNamespace,
+                OutputContextPath = options.OutputContextPath,
+                ProjectPath = options.ProjectPath,
+                ProjectRootNamespace = options.ProjectRootNamespace,
+                SelectedHandlebarsLanguage = options.SelectedHandlebarsLanguage,
+                SelectedToBeGenerated = options.SelectedToBeGenerated,
+                Tables = options.Tables,
+                UseDatabaseNames = options.UseDatabaseNames,
+                UseFluentApiOnly = options.UseFluentApiOnly,
+                UseHandleBars = options.UseHandleBars,
+                UseInflector = options.UseInflector,
+                UseLegacyPluralizer = options.UseLegacyPluralizer,
+            };
 
-			foreach (var file in filePaths.AdditionalFiles)
-			{
-				PostProcess(file, reverseEngineerOptions.IdReplace);
-			}
-			PostProcess(filePaths.ContextFile, reverseEngineerOptions.IdReplace);
+            var launcher = new EfRevEngLauncher(commandOptions);
+            return launcher.GetOutput();
+        }
 
-			//EG tilpasninger
-			var outputFolder = Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputPath);
-			EGCustomChanges.Generate(filePaths.AdditionalFiles, reverseEngineerOptions.ConnectionString, outputFolder, reverseEngineerOptions.ExcludeStringLengthAttribute, reverseEngineerOptions.ContextClassName, @namespace);
-			//...
+        private void PostProcessContext(string contextFile, ReverseEngineerOptions options, string modelNamespace, string contextNamespace)
+        {
+            var finalLines = new List<string>();
+            var lines = File.ReadAllLines(contextFile);
 
-			var result = new EfCoreReverseEngineerResult
-			{
-				EntityErrors = errors,
-				EntityWarnings = warnings,
-				EntityTypeFilePaths = filePaths.AdditionalFiles,
-				ContextFilePath = filePaths.ContextFile,
-			};
+            int i = 1;
+            var inModelCreating = false;
 
-			return result;
-		}
+            foreach (var line in lines)
+            {
+                if (!options.IncludeConnectionString)
+                {
+                    if (line.Trim().StartsWith("#warning To protect"))
+                        continue;
 
-		private void PostProcessContext(string contextFile, ReverseEngineerOptions options)
-		{
-			var finalLines = new List<string>();
-			var lines = File.ReadAllLines(contextFile);
+                    if (line.Trim().StartsWith("optionsBuilder.Use"))
+                        continue;
+                }
 
-			int i = 1;
-			var inModelCreating = false;
+                if (modelNamespace != contextNamespace)
+                {
+                    if (line.Contains("using System;"))
+                    {
+                        finalLines.Add("using " + modelNamespace + ";");
+                    }
+                    if (line.Contains("namespace"))
+                    {
+                        finalLines.Add("namespace " + contextNamespace);
+                        continue;
+                    }
+                }
 
-			foreach (var line in lines)
-			{
-				if (!options.IncludeConnectionString)
-				{
-					if (line.Trim().StartsWith("#warning To protect"))
-						continue;
+                if (line.Contains("OnModelCreating")) inModelCreating = true;
 
-					if (line.Trim().StartsWith("optionsBuilder.Use"))
-						continue;
-				}
+                if (!options.UseHandleBars && inModelCreating && line.StartsWith("        }"))
+                {
+                    finalLines.Add(string.Empty);
+                    finalLines.Add("            OnModelCreatingPartial(modelBuilder);");
+                }
 
-				if (line.Contains("OnModelCreating")) inModelCreating = true;
+                if (!options.UseHandleBars && inModelCreating && line.StartsWith("    }"))
+                {
+                    finalLines.Add(string.Empty);
+                    finalLines.Add("        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);");
+                }
 
-				if (!options.UseHandleBars && inModelCreating && line.StartsWith("        }"))
-				{
-					finalLines.Add(string.Empty);
-					finalLines.Add("            OnModelCreatingPartial(modelBuilder);");
-				}
+                finalLines.Add(line);
+                i++;
+            }
+            File.WriteAllLines(contextFile, finalLines, Encoding.UTF8);
+        }
 
-				if (!options.UseHandleBars && inModelCreating && line.StartsWith("    }"))
-				{
-					finalLines.Add(string.Empty);
-					finalLines.Add("        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);");
-				}
-
-				finalLines.Add(line);
-				i++;
-			}
-			File.WriteAllLines(contextFile, finalLines, Encoding.UTF8);
-		}
-
-		private void PostProcess(string file, bool idReplace)
-		{
-			var text = File.ReadAllText(file, Encoding.UTF8);
-			if (idReplace)
-			{
-				text = text.Replace("Id, ", "ID, ");
-				text = text.Replace("Id }", "ID }");
-				text = text.Replace("Id }", "ID }");
-				text = text.Replace("Id)", "ID)");
-				text = text.Replace("Id { get; set; }", "ID { get; set; }");
-			}
-			File.WriteAllText(file, text.TrimEnd(), Encoding.UTF8);
-		}
-
-		public string GenerateClassName(string value)
-		{
-			var className = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(value);
-			var isValid = System.CodeDom.Compiler.CodeDomProvider.CreateProvider("C#").IsValidIdentifier(className);
-
-			if (!isValid)
-			{
-				// File name contains invalid chars, remove them
-				var regex = new Regex(@"[^\p{Ll}\p{Lu}\p{Lt}\p{Lo}\p{Nd}\p{Nl}\p{Mn}\p{Mc}\p{Cf}\p{Pc}\p{Lm}]", RegexOptions.None, TimeSpan.FromSeconds(5));
-				className = regex.Replace(className, "");
-
-				// Class name doesn't begin with a letter, insert an underscore
-				if (!char.IsLetter(className, 0))
-				{
-					className = className.Insert(0, "_");
-				}
-			}
-
-			return className.Replace(" ", string.Empty);
-		}
-
-		public List<TableInformationModel> GetDacpacTables(string dacpacPath)
-		{
-			var builder = new DacpacTableListBuilder(dacpacPath);
-			return builder.GetTableDefinitions();
-		}
-	}
+        private void PostProcess(string file, bool idReplace)
+        {
+            var text = File.ReadAllText(file, Encoding.UTF8);
+            if (idReplace)
+            {
+                text = text.Replace("Id, ", "ID, ");
+                text = text.Replace("Id }", "ID }");
+                text = text.Replace("Id }", "ID }");
+                text = text.Replace("Id)", "ID)");
+                text = text.Replace("Id { get; set; }", "ID { get; set; }");
+            }
+            File.WriteAllText(file, "// <auto-generated> This file has been auto generated by EF Core Power Tools. </auto-generated>" + Environment.NewLine + text.TrimEnd(), Encoding.UTF8);
+        }
+    }
 }

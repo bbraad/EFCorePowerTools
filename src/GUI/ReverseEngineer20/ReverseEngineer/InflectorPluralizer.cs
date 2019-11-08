@@ -1,4 +1,4 @@
-﻿using Bricelam.EntityFrameworkCore.Design;
+﻿using Humanizer;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace ReverseEngineer20.ReverseEngineer
@@ -7,12 +7,20 @@ namespace ReverseEngineer20.ReverseEngineer
     {
         public string Pluralize(string name)
         {
-            return new Pluralizer().Pluralize(name) ?? name;
+            if (name != null)
+            {
+                return name.Pluralize(inputIsKnownToBeSingular: false);
+            }
+            return name;
         }
 
         public string Singularize(string name)
         {
-            return new Pluralizer().Singularize(name) ?? name;
+            if (name != null)
+            {
+                return name.Singularize(inputIsKnownToBePlural: false);
+            }
+            return name;
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using EFCorePowerTools;
-using EFCorePowerTools.Shared.Enums;
 using EFCorePowerTools.Shared.Models;
 using ErikEJ.SqlCeScripting;
 using Microsoft.VisualStudio.Data.Core;
@@ -14,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using MySql.Data.MySqlClient;
+using ReverseEngineer20;
 
 // ReSharper disable once CheckNamespace
 namespace ErikEJ.SqlCeToolbox.Helpers
@@ -168,7 +168,7 @@ namespace ErikEJ.SqlCeToolbox.Helpers
                     providerGuid = Resources.NpgsqlProvider;
                 }
 
-                if (providerInvariant == "Mysql")
+                if (providerInvariant == "Mysql" || providerInvariant == "MySql.Data.MySqlClient")
                 {
                     dbType = DatabaseType.Mysql;
                     providerGuid = Resources.MysqlVSProvider;
@@ -189,21 +189,35 @@ namespace ErikEJ.SqlCeToolbox.Helpers
             return pgBuilder.Database;
         }
 
-        internal static List<TableInformationModel> GetNpgsqlTableNames(string connectionString)
+        internal static List<TableInformationModel> GetNpgsqlTableNames(string connectionString, bool includeViews)
         {
             var result = new List<TableInformationModel>();
             using (var npgsqlConn = new NpgsqlConnection(connectionString))
             {
                 npgsqlConn.Open();
+
                 var tablesDataTable = npgsqlConn.GetSchema("Tables");
+                var constraints = npgsqlConn.GetSchema("Constraints");
                 foreach (DataRow row in tablesDataTable.Rows)
                 {
-                    var schema = row["table_schema"].ToString();
-                    if (schema != "pg_catalog"
-                        && schema != "information_schema")
+                    var primaryKey = constraints
+                        .AsEnumerable()
+                        .Where(myRow => myRow.Field<string>("table_name") == row["table_name"].ToString()
+                        && myRow.Field<string>("table_schema") == row["table_schema"].ToString()
+                        && myRow.Field<string>("constraint_type") == "PRIMARY KEY")
+                        .FirstOrDefault();
+
+                    var info = new TableInformationModel(row["table_schema"].ToString() + "." + row["table_name"].ToString(), includeViews ? true : primaryKey != null, includeViews ? primaryKey == null : false);
+                    result.Add(info);
+                }
+
+                if (includeViews)
+                {
+                    var viewsDataTable = npgsqlConn.GetSchema("Views");
+                    foreach (DataRow row in viewsDataTable.Rows)
                     {
-                        // TODO: Check if the table has a primary key
-                        result.Add(new TableInformationModel(schema + "." + row["table_name"].ToString(), true));
+                        var info = new TableInformationModel(row["table_schema"].ToString() + "." + row["table_name"].ToString(), true, true);
+                        result.Add(info);
                     }
                 }
             }
@@ -217,7 +231,7 @@ namespace ErikEJ.SqlCeToolbox.Helpers
             return myBuilder.Database;
         }
 
-        internal static List<TableInformationModel> GetMysqlTableNames(string connectionString)
+        internal static List<TableInformationModel> GetMysqlTableNames(string connectionString, bool includeViews)
         {
             var result = new List<TableInformationModel>();
             using (var mysqlConn = new MySqlConnection(connectionString))
@@ -231,7 +245,8 @@ namespace ErikEJ.SqlCeToolbox.Helpers
                     foreach (string table in tables)
                     {
                         bool hasPrimaryKey = HasMysqlPrimaryKey(schema, table, mysqlConn);
-                        result.Add(new TableInformationModel(table, hasPrimaryKey));
+                        var info = new TableInformationModel(table, includeViews ? true : hasPrimaryKey, includeViews ? !hasPrimaryKey : false);
+                        result.Add(info);
                     }
                 }
             }
@@ -239,8 +254,6 @@ namespace ErikEJ.SqlCeToolbox.Helpers
             return result.OrderBy(l => l.Name).ToList();
         }
 
-        // We could use Mysql.Data for this as MysqlConnector doesn't support GetSchema("Tables").
-        // I will just pluck the data we need for now.
         private static List<string> GetMysqlTables(MySqlConnection mysqlConn, string schema)
         {
             List<string> tables = new List<string>();
@@ -254,7 +267,6 @@ namespace ErikEJ.SqlCeToolbox.Helpers
                     tables.Add(reader.GetString(0));
                 }
             }
-
 
             return tables;
         }

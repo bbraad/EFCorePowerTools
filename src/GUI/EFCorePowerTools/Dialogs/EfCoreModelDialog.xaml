@@ -8,7 +8,7 @@
                  xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
                  mc:Ignorable="d"
                  ShowInTaskbar="False"
-                 Height="500"
+                 Height="700"
                  Width="418"
                  WindowStartupLocation="CenterOwner"
                  ResizeMode="NoResize"
@@ -29,19 +29,19 @@
                 <ResourceDictionary>
                     <Style x:Key="GenerationOptionsCheckBoxStyle"
                            TargetType="CheckBox">
-                        <Setter Property="Margin" Value="0,3,0,3"/>
+                        <Setter Property="Margin" Value="0, 8, 0, 8"/>
                     </Style>
                     <Style x:Key="GenerationOptionsNamingCheckBoxStyle"
                            TargetType="CheckBox">
-                        <Setter Property="Margin" Value="5,3"/>
+                        <Setter Property="Margin" Value="5, 6, 5, 6"/>
                     </Style>
                     <Style x:Key="LastGenerationOptionsNamingCheckBoxStyle"
                            TargetType="CheckBox">
-                        <Setter Property="Margin" Value="5,3,5,0"/>
+                        <Setter Property="Margin" Value="5, 6, 5, 0"/>
                     </Style>
                     <Style TargetType="TextBox" x:Key="TextInputStyle">
-                        <Setter Property="Height" Value="20"/>
-                        <Setter Property="Margin" Value="0,2,0,5"/>
+                        <Setter Property="Height" Value="26"/>
+                        <Setter Property="Margin" Value="0,2,0,15"/>
                         <Setter Property="HorizontalAlignment" Value="Stretch"/>
                     </Style>
                     <Style TargetType="GroupBox" x:Key="NamingGroupBoxStyle">
@@ -53,10 +53,18 @@
                         <Setter Property="Margin" Value="0,10,0,0"/>
                         <Setter Property="HorizontalAlignment" Value="Right"/>
                     </Style>
-                    <Style TargetType="ComboBox" x:Key="GenerationMethodComboBoxStyle">
+                    <Style x:Key="GenerationMethodComboBoxStyle"
+                        TargetType="ComboBox">
                         <Setter Property="HorizontalAlignment" Value="Right"/>
                         <Setter Property="IsEditable" Value="False"/>
                         <Setter Property="MinWidth" Value="200"/>
+                    </Style>
+                    <Style x:Key="HandlebarsLanguageComboBoxStyle"
+                        TargetType="ComboBox">
+                        <Setter Property="HorizontalAlignment" Value="Right"/>
+                        <Setter Property="IsEditable" Value="False"/>
+                        <Setter Property="MinWidth" Value="105"/>
+                        <Setter Property="Height" Value="23"/>
                     </Style>
                 </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
@@ -69,19 +77,25 @@
 
     <Grid Margin="15, 5, 15, 10">
         <Grid.RowDefinitions>
-            <RowDefinition Height="15" />
-            <RowDefinition Height="30" />
-            <RowDefinition Height="15" />
-            <RowDefinition Height="30" />
-            <RowDefinition Height="15" />
-            <RowDefinition Height="30" />
-            <RowDefinition Height="25" />
-            <RowDefinition Height="160" />
-            <RowDefinition Height="20" />
-            <RowDefinition Height="20" />
-            <RowDefinition Height="20" />
-            <RowDefinition Height="20" />
-            <RowDefinition Height="50" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <dw:LiveTextBlock Grid.Row="0"
@@ -100,70 +114,88 @@
                  Text="{Binding Model.Namespace, Mode=TwoWay}"/>
 
         <dw:LiveTextBlock Grid.Row="4"
-                          Text="Project path (f.ex. Model) - optional"/>
+                          Text="EntityTypes path (f.ex. Models) - optional"/>
         <TextBox Grid.Row="5"
                  TabIndex="2"
                  Style="{StaticResource TextInputStyle}"
                  Text="{Binding Model.OutputPath, Mode=TwoWay}"/>
 
         <dw:LiveTextBlock Grid.Row="6"
+                          Text="EntityTypes sub-namespace (overrides path) - optional"/>
+        <TextBox Grid.Row="7"
+                 TabIndex="3"
+                 Style="{StaticResource TextInputStyle}"
+                 Text="{Binding Model.ModelNamespace, Mode=TwoWay}"/>
+
+        <dw:LiveTextBlock Grid.Row="8"
+                          Text="DbContext path (f.ex. Data) - optional"/>
+        <TextBox Grid.Row="9"
+                 TabIndex="4"
+                 Style="{StaticResource TextInputStyle}"
+                 Text="{Binding Model.OutputContextPath, Mode=TwoWay}"/>
+
+        <dw:LiveTextBlock Grid.Row="10"
+                          Text="DbContext sub-namespace (overrides path) - optional"/>
+        <TextBox Grid.Row="11"
+                 TabIndex="5"
+                 Style="{StaticResource TextInputStyle}"
+                 Text="{Binding Model.ContextNamespace, Mode=TwoWay}"/>
+
+        <dw:LiveTextBlock Grid.Row="12"
                           Text="What to generate"/>
-        <ComboBox Grid.Row="6"
-                  TabIndex="3"
+        <ComboBox Grid.Row="12"
+                  TabIndex="6"
                   ItemsSource="{Binding GenerationModeList}"
                   Style="{StaticResource GenerationMethodComboBoxStyle}"
-                  SelectedIndex="{Binding Model.SelectedTobeGenerated, Mode=TwoWay}" />
+                  SelectedIndex="{Binding Model.SelectedToBeGenerated, Mode=TwoWay}" />
 
-        <GroupBox Grid.Row="7"
+        <GroupBox Grid.Row="13"
                   Header="Naming"
                   Style="{StaticResource NamingGroupBoxStyle}">
             <StackPanel>
-                <CheckBox TabIndex="4"
+                <CheckBox TabIndex="7"
                           Content="Pluralize or singularize generated object names (English)"
                           IsChecked="{Binding Model.UsePluralizer}"
                           IsEnabled="{Binding Model.UseDatabaseNames, Converter={StaticResource BoolInvertConverter}}"
                           Style="{StaticResource GenerationOptionsNamingCheckBoxStyle}"/>
-                <CheckBox TabIndex="5"
+                <CheckBox TabIndex="8"
                           Content="Use table and column names directly from the database"
                           IsChecked="{Binding Model.UseDatabaseNames}"
                           IsEnabled="{Binding Model.UsePluralizer, Converter={StaticResource BoolInvertConverter}}"
-                          Style="{StaticResource GenerationOptionsNamingCheckBoxStyle}"/>
-                <CheckBox TabIndex="6"
-                          Content="Replace Id with ID (experimental!)"
-                          IsChecked="{Binding Model.ReplaceId}"
-                          Style="{StaticResource GenerationOptionsNamingCheckBoxStyle}"/>
-				<CheckBox TabIndex="7"
-                          Content="Combine namespace and model into full namespace"
-                          IsChecked="{Binding Model.UseFullNamespace}"
-                          Style="{StaticResource GenerationOptionsNamingCheckBoxStyle}"/>
-				<CheckBox TabIndex="8"
-                          Content="Exclude [StringLength] attribute"
-                          IsChecked="{Binding Model.ExcludeStringLengthAttribute}"
                           Style="{StaticResource LastGenerationOptionsNamingCheckBoxStyle}"/>
-			</StackPanel>
+            </StackPanel>
         </GroupBox>
-        <CheckBox TabIndex="10"
+
+        <CheckBox Grid.Row="14"
+                  TabIndex="9"
                   Content="Use DataAnnotation attributes to configure the model"
-                  Grid.Row="8"
                   IsChecked="{Binding Model.UseDataAnnotations}"
                   Style="{StaticResource GenerationOptionsCheckBoxStyle}"/>
-        <CheckBox TabIndex="11"
-                  Content="Customize code using Handlebars templates (preview)"
-                  Grid.Row="9"
-                  IsChecked="{Binding Model.UseHandelbars}"
-                  Style="{StaticResource GenerationOptionsCheckBoxStyle}"/>
-        <CheckBox TabIndex="12"
+        <StackPanel Orientation="Horizontal"
+                    Grid.Row="15">
+            <CheckBox TabIndex="10"
+                      Name="UseHandlebarsCheckbox"
+                      Content="Customize code using Handlebars templates"
+                      IsChecked="{Binding Model.UseHandelbars}"
+                      Style="{StaticResource GenerationOptionsCheckBoxStyle}"/>
+            <ComboBox TabIndex="11"
+                      ItemsSource="{Binding HandlebarsLanguageList}"
+                      Style="{StaticResource HandlebarsLanguageComboBoxStyle}"
+                      SelectedIndex="{Binding Model.SelectedHandlebarsLanguage, Mode=TwoWay}" Margin="10,0,0,0"
+                      IsEnabled="{Binding IsChecked, ElementName=UseHandlebarsCheckbox}" />
+        </StackPanel>
+        <CheckBox Grid.Row="16"
+                  TabIndex="12"
                   Content="Include connection string in generated code"
-                  Grid.Row="10"
                   IsChecked="{Binding Model.IncludeConnectionString}"
                   IsEnabled="{Binding MayIncludeConnectionString}"
                   Style="{StaticResource GenerationOptionsCheckBoxStyle}"/>
-        <CheckBox TabIndex="13"
+        <CheckBox Grid.Row="17"
+                  TabIndex="13"
                   Content="Install the EF Core provider package in the project"
-                  Grid.Row="11"
                   IsChecked="{Binding Model.InstallNuGetPackage}" 
                   Style="{StaticResource GenerationOptionsCheckBoxStyle}"/>
-        <StackPanel Grid.Row="12"
+        <StackPanel Grid.Row="18"
                     Style="{StaticResource ButtonRowStyle}">
             <dw:DialogButton TabIndex="20"
                              Content="OK"

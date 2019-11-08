@@ -5,12 +5,17 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <AssemblyOriginatorKeyFile>Key.snk</AssemblyOriginatorKeyFile>
+    <Platforms>AnyCPU;x86</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="Contracts\**" />
     <EmbeddedResource Remove="Contracts\**" />
     <None Remove="Contracts\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RevEng.Shared\RevEng.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

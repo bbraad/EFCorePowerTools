@@ -1,17 +1,62 @@
-﻿using ErikEJ.SqlCeScripting;
+﻿using EFCorePowerTools;
+using EFCorePowerTools.Shared.Models;
+using ErikEJ.SqlCeScripting;
 using ErikEJ.SQLiteScripting;
+using ReverseEngineer20;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
 
 namespace ErikEJ.SqlCeToolbox.Helpers
 {
-    using EFCorePowerTools;
-    using EFCorePowerTools.Shared.Enums;
-
     internal static class RepositoryHelper
     {
         //TODO Update this when SQLite provider is updated!
-        public static string SqliteEngineVersion = "3.22";
+        public static string SqliteEngineVersion = "3.28";
+
+        public static List<TableInformationModel> GetTablesFromRepository(DatabaseInfo dbInfo, bool includeViews = false)
+        {
+            if (dbInfo.DatabaseType == DatabaseType.Npgsql)
+            {
+                return EnvDteHelper.GetNpgsqlTableNames(dbInfo.ConnectionString, includeViews);
+            }
+
+            if (dbInfo.DatabaseType == DatabaseType.Mysql)
+            {
+                return EnvDteHelper.GetMysqlTableNames(dbInfo.ConnectionString, includeViews);
+            }
+
+            using (var repository = RepositoryHelper.CreateRepository(dbInfo))
+            {
+                var allPks = repository.GetAllPrimaryKeys();
+                var tableList = repository.GetTableNamesForExclusion();
+                var tables = new List<TableInformationModel>();
+
+                foreach (var table in tableList)
+                {
+                    var hasPrimaryKey = allPks.Any(m => m.TableName == table.TableName);
+                    var name = string.IsNullOrEmpty(table.Schema)
+                        ? table.TableName
+                        : $"[{table.Schema}].[{table.Name}]";
+
+                    var info = new TableInformationModel(name, includeViews ? true : hasPrimaryKey, includeViews ? !hasPrimaryKey : false);
+                    tables.Add(info);
+                }
+
+                if (includeViews)
+                {
+                    var views = repository.GetAllViews();
+                    foreach (var view in views)
+                    {
+                        var info = new TableInformationModel(view.ViewName, true, true);
+                        tables.Add(info);
+                    }
+                }
+
+                return tables.OrderBy(l => l.Name).ToList();
+            }
+        }
 
         internal static IRepository CreateRepository(DatabaseInfo databaseInfo)
         {

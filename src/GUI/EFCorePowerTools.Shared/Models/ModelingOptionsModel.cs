@@ -10,14 +10,19 @@
     public class ModelingOptionsModel : INotifyPropertyChanged
     {
         private bool _installNuGetPackage;
-        private int _selectedTobeGenerated;
+        private int _selectedToBeGenerated;
         private bool _includeConnectionString;
         private bool _useHandelbars;
+        private int _selectedHandlebarsLanguage;
         private bool _replaceId;
+        private bool _dontCombineNamespace;
         private bool _usePluralizer;
         private bool _useDatabaseNames;
         private string _ns;
         private string _outputPath;
+        private string _outputContextPath;
+        private string _modelNamespace;
+        private string _contextNamespace;
         private string _modelName;
         private bool _useDataAnnotations;
         private string _projectName;
@@ -54,6 +59,39 @@
             {
                 if (value == _outputPath) return;
                 _outputPath = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string OutputContextPath
+        {
+            get => _outputContextPath;
+            set
+            {
+                if (value == _outputContextPath) return;
+                _outputContextPath = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string ModelNamespace
+        {
+            get => _modelNamespace;
+            set
+            {
+                if (value == _modelNamespace) return;
+                _modelNamespace = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public string ContextNamespace
+        {
+            get => _contextNamespace;
+            set
+            {
+                if (value == _contextNamespace) return;
+                _contextNamespace = value;
                 OnPropertyChanged();
             }
         }
@@ -102,6 +140,17 @@
             }
         }
 
+        public bool DoNotCombineNamespace
+        {
+            get => _dontCombineNamespace;
+            set
+            {
+                if (value == _dontCombineNamespace) return;
+                _dontCombineNamespace = value;
+                OnPropertyChanged();
+            }
+        }
+
         public bool UseHandelbars
         {
             get => _useHandelbars;
@@ -109,6 +158,17 @@
             {
                 if (value == _useHandelbars) return;
                 _useHandelbars = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int SelectedHandlebarsLanguage
+        {
+            get => _selectedHandlebarsLanguage;
+            set
+            {
+                if (value == _selectedHandlebarsLanguage) return;
+                _selectedHandlebarsLanguage = value;
                 OnPropertyChanged();
             }
         }
@@ -124,13 +184,13 @@
             }
         }
 
-        public int SelectedTobeGenerated
+        public int SelectedToBeGenerated
         {
-            get => _selectedTobeGenerated;
+            get => _selectedToBeGenerated;
             set
             {
-                if (value == _selectedTobeGenerated) return;
-                _selectedTobeGenerated = value;
+                if (value == _selectedToBeGenerated) return;
+                _selectedToBeGenerated = value;
                 OnPropertyChanged();
             }
         }

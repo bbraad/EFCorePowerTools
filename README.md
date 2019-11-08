@@ -3,7 +3,11 @@
 
 Entity Framework Core Power Tools - reverse engineering and model visualization for EF Core
 
+[![Gitter](https://badges.gitter.im/EFCorePowerTools/community.svg)](https://gitter.im/EFCorePowerTools/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 [![Twitter Follow](https://img.shields.io/twitter/follow/ErikEJ.svg?style=social&label=Follow)](http://twitter.com/ErikEJ) 
+
+[EF Core Power Tools presentation](https://erikej.github.io/EFCorePowerTools/index.html)
 
 [My tools and utilities for embedded database development](http://erikej.github.io/SqlCeToolbox/)
 
@@ -15,7 +19,7 @@ If you use my free tools, I would be very grateful for a [rating or review here]
 
 # Downloads/builds
 
-The EF Core Power Tools contains DbContext design time feature: Reverse Engineering, Model inspection and more to come - see the [wiki page](https://github.com/ErikEJ/EFCorePowerTools/wiki) for more information
+The EF Core Power Tools contains DbContext design time feature: Reverse Engineering, Model inspection and more to come - see the [wiki page](https://github.com/ErikEJ/EFCorePowerTools/wiki) for more information. .NET Framework 4.7.1 or later is required.
 
 **Release**
 
