@@ -11,191 +11,268 @@ using System.Text;
 
 namespace ReverseEngineer20
 {
-	public class EfCoreReverseEngineer
-	{
-		public ReverseEngineerResult GenerateFiles(ReverseEngineerOptions reverseEngineerOptions, bool includeViews)
-		{
-			if (includeViews)
-			{
-				return LaunchExternalRunner(reverseEngineerOptions);
-			}
+    public class EfCoreReverseEngineer
+    {
+        public ReverseEngineerResult GenerateFiles(ReverseEngineerOptions reverseEngineerOptions, bool includeViews)
+        {
+            if (includeViews)
+            {
+                return LaunchExternalRunner(reverseEngineerOptions);
+            }
 
-			var errors = new List<string>();
-			var warnings = new List<string>();
-			var reporter = new OperationReporter(
-				 new OperationReportHandler(
-					  m => errors.Add(m),
-					  m => warnings.Add(m)));
+            var errors = new List<string>();
+            var warnings = new List<string>();
+            var reporter = new OperationReporter(
+                new OperationReportHandler(
+                    m => errors.Add(m),
+                    m => warnings.Add(m)));
 
-			var serviceProvider = ServiceProviderBuilder.Build(reverseEngineerOptions);
-			var scaffolder = serviceProvider.GetService<IReverseEngineerScaffolder>();
+            var serviceProvider = ServiceProviderBuilder.Build(reverseEngineerOptions);
+            var scaffolder = serviceProvider.GetService<IReverseEngineerScaffolder>();
 
-			var schemas = new List<string>();
-			if (reverseEngineerOptions.DefaultDacpacSchema != null)
-			{
-				schemas.Add(reverseEngineerOptions.DefaultDacpacSchema);
-			}
+            var schemas = new List<string>();
+            if (reverseEngineerOptions.DefaultDacpacSchema != null)
+            {
+                schemas.Add(reverseEngineerOptions.DefaultDacpacSchema);
+            }
 
-			var outputDir = reverseEngineerOptions.OutputPath != null
-				? Path.GetFullPath(Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputPath))
-				: reverseEngineerOptions.ProjectPath;
+            var outputDir = !string.IsNullOrEmpty(reverseEngineerOptions.OutputPath)
+               ? Path.GetFullPath(Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputPath))
+               : reverseEngineerOptions.ProjectPath;
 
-			var outputContextDir = reverseEngineerOptions.OutputContextPath != null
-				 ? Path.GetFullPath(Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputContextPath))
-				 : outputDir;
+            var outputContextDir = !string.IsNullOrEmpty(reverseEngineerOptions.OutputContextPath)
+                ? Path.GetFullPath(Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputContextPath))
+                : outputDir;
 
-			var modelNamespace = reverseEngineerOptions.ProjectRootNamespace;
-			var contextNamespace = reverseEngineerOptions.ProjectRootNamespace;
+            var modelNamespace = !string.IsNullOrEmpty(reverseEngineerOptions.ModelNamespace)
+                ? reverseEngineerOptions.ProjectRootNamespace + "." + reverseEngineerOptions.ModelNamespace
+                : PathHelper.GetNamespaceFromOutputPath(outputDir, reverseEngineerOptions.ProjectPath, reverseEngineerOptions.ProjectRootNamespace);
 
-			var modelOptions = new ModelReverseEngineerOptions
-			{
-				UseDatabaseNames = reverseEngineerOptions.UseDatabaseNames
-			};
+            var contextNamespace = !string.IsNullOrEmpty(reverseEngineerOptions.ContextNamespace)
+                ? reverseEngineerOptions.ProjectRootNamespace + "." + reverseEngineerOptions.ContextNamespace
+                : PathHelper.GetNamespaceFromOutputPath(outputContextDir, reverseEngineerOptions.ProjectPath, reverseEngineerOptions.ProjectRootNamespace);
 
-			var codeOptions = new ModelCodeGenerationOptions
-			{
-				UseDataAnnotations = !reverseEngineerOptions.UseFluentApiOnly
-			};
+            var modelOptions = new ModelReverseEngineerOptions
+            {
+                UseDatabaseNames = reverseEngineerOptions.UseDatabaseNames
+            };
 
-			var scaffoldedModel = scaffolder.ScaffoldModel(
-					  reverseEngineerOptions.Dacpac != null
-							? reverseEngineerOptions.Dacpac
-							: reverseEngineerOptions.ConnectionString,
-					  reverseEngineerOptions.Tables.Select(m => m.Name).ToArray(),
-					  schemas,
-					  modelNamespace,
-					  "C#",
-					  outputContextDir,
-					  reverseEngineerOptions.ContextClassName,
-					  modelOptions,
-					  codeOptions);
+            var codeOptions = new ModelCodeGenerationOptions
+            {
+                UseDataAnnotations = !reverseEngineerOptions.UseFluentApiOnly
+            };
 
-			var filePaths = scaffolder.Save(
-				 scaffoldedModel,
-				 outputDir,
-				 overwriteFiles: true);
+            var scaffoldedModel = scaffolder.ScaffoldModel(
+                    reverseEngineerOptions.Dacpac != null
+                        ? reverseEngineerOptions.Dacpac
+                        : reverseEngineerOptions.ConnectionString,
+                    reverseEngineerOptions.Tables.Select(m => m.Name).ToArray(),
+                    schemas,
+                    modelNamespace,
+                    "C#",
+                    outputContextDir,
+                    reverseEngineerOptions.ContextClassName,
+                    modelOptions,
+                    codeOptions);
 
-			PostProcessContext(filePaths.ContextFile, reverseEngineerOptions, modelNamespace, contextNamespace);
+            var filePaths = scaffolder.Save(
+                scaffoldedModel,
+                outputDir,
+                overwriteFiles: true);
 
-			foreach (var file in filePaths.AdditionalFiles)
-			{
-				PostProcess(file, reverseEngineerOptions.IdReplace);
-			}
-			PostProcess(filePaths.ContextFile, reverseEngineerOptions.IdReplace);
+            PostProcessContext(filePaths.ContextFile, reverseEngineerOptions, modelNamespace, contextNamespace);
 
-			//EG tilpasninger
-			var outputFolder = Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputPath);
-			EGCustomChanges.Generate(filePaths.AdditionalFiles, reverseEngineerOptions.ConnectionString, outputFolder, reverseEngineerOptions.ContextClassName, contextNamespace);
-			//...
+            foreach (var file in filePaths.AdditionalFiles)
+            {
+                PostProcess(file, reverseEngineerOptions.IdReplace);
+            }
+            
+            PostProcess(filePaths.ContextFile, reverseEngineerOptions.IdReplace);
 
-			var result = new ReverseEngineerResult
-			{
-				EntityErrors = errors,
-				EntityWarnings = warnings,
-				EntityTypeFilePaths = filePaths.AdditionalFiles,
-				ContextFilePath = filePaths.ContextFile,
-			};
+            var entityTypeConfigurationPaths = SplitDbContext(filePaths.ContextFile, reverseEngineerOptions.UseDbContextSplitting, contextNamespace);
 
-			return result;
-		}
+            CleanUp(filePaths, entityTypeConfigurationPaths);
 
-		private ReverseEngineerResult LaunchExternalRunner(ReverseEngineerOptions options)
-		{
-			var commandOptions = new ReverseEngineerCommandOptions
-			{
-				ConnectionString = options.ConnectionString,
-				ContextClassName = options.ContextClassName,
-				CustomReplacers = options.CustomReplacers,
-				Dacpac = options.Dacpac,
-				DatabaseType = options.DatabaseType,
-				DefaultDacpacSchema = options.DefaultDacpacSchema,
-				DoNotCombineNamespace = options.DoNotCombineNamespace,
-				IdReplace = options.IdReplace,
-				IncludeConnectionString = options.IncludeConnectionString,
-				OutputPath = options.OutputPath,
-				ContextNamespace = options.ContextNamespace,
-				ModelNamespace = options.ModelNamespace,
-				OutputContextPath = options.OutputContextPath,
-				ProjectPath = options.ProjectPath,
-				ProjectRootNamespace = options.ProjectRootNamespace,
-				SelectedHandlebarsLanguage = options.SelectedHandlebarsLanguage,
-				SelectedToBeGenerated = options.SelectedToBeGenerated,
-				Tables = options.Tables,
-				UseDatabaseNames = options.UseDatabaseNames,
-				UseFluentApiOnly = options.UseFluentApiOnly,
-				UseHandleBars = options.UseHandleBars,
-				UseInflector = options.UseInflector,
-				UseLegacyPluralizer = options.UseLegacyPluralizer,
-			};
+            var result = new ReverseEngineerResult
+            {
+                EntityErrors = errors,
+                EntityWarnings = warnings,
+                EntityTypeFilePaths = filePaths.AdditionalFiles,
+                ContextFilePath = filePaths.ContextFile,
+            };
 
-			var launcher = new EfRevEngLauncher(commandOptions);
-			return launcher.GetOutput();
-		}
+            return result;
+        }
 
-		private void PostProcessContext(string contextFile, ReverseEngineerOptions options, string modelNamespace, string contextNamespace)
-		{
-			var finalLines = new List<string>();
-			var lines = File.ReadAllLines(contextFile);
+        private List<string> SplitDbContext(string contextFile, bool useDbContextSplitting, string contextNamespace)
+        {
+            if (!useDbContextSplitting)
+            {
+                return new List<string>();
+            }
 
-			int i = 1;
-			var inModelCreating = false;
+            return DbContextSplitter.Split(contextFile, contextNamespace);
+        }
 
-			foreach (var line in lines)
-			{
-				if (!options.IncludeConnectionString)
-				{
-					if (line.Trim().StartsWith("#warning To protect"))
-						continue;
+        private ReverseEngineerResult LaunchExternalRunner(ReverseEngineerOptions options)
+        {
+            var commandOptions = new ReverseEngineerCommandOptions
+            {
+                ConnectionString = options.ConnectionString,
+                ContextClassName = options.ContextClassName,
+                CustomReplacers = options.CustomReplacers,
+                Dacpac = options.Dacpac,
+                DatabaseType = options.DatabaseType,
+                DefaultDacpacSchema = options.DefaultDacpacSchema,
+                DoNotCombineNamespace = options.DoNotCombineNamespace,
+                IdReplace = options.IdReplace,
+                IncludeConnectionString = options.IncludeConnectionString,
+                OutputPath = options.OutputPath,
+                ContextNamespace = options.ContextNamespace,
+                ModelNamespace = options.ModelNamespace,
+                OutputContextPath = options.OutputContextPath,
+                ProjectPath = options.ProjectPath,
+                ProjectRootNamespace = options.ProjectRootNamespace,
+                SelectedHandlebarsLanguage = options.SelectedHandlebarsLanguage,
+                SelectedToBeGenerated = options.SelectedToBeGenerated,
+                Tables = options.Tables,
+                UseDatabaseNames = options.UseDatabaseNames,
+                UseFluentApiOnly = options.UseFluentApiOnly,
+                UseHandleBars = options.UseHandleBars,
+                UseInflector = options.UseInflector,
+                UseLegacyPluralizer = options.UseLegacyPluralizer,
+                UseSpatial = options.UseSpatial,
+                UseDbContextSplitting = options.UseDbContextSplitting,
+            };
 
-					if (line.Trim().StartsWith("optionsBuilder.Use"))
-						continue;
-				}
+            var launcher = new EfRevEngLauncher(commandOptions);
+            return launcher.GetOutput();
+        }
 
-				if (modelNamespace != contextNamespace)
-				{
-					if (line.Contains("using System;"))
-					{
-						finalLines.Add("using " + modelNamespace + ";");
-					}
-					if (line.Contains("namespace"))
-					{
-						finalLines.Add("namespace " + contextNamespace);
-						continue;
-					}
-				}
+        private void PostProcessContext(string contextFile, ReverseEngineerOptions options, string modelNamespace, string contextNamespace)
+        {
+            var finalLines = new List<string>();
+            var lines = File.ReadAllLines(contextFile);
 
-				if (line.Contains("OnModelCreating")) inModelCreating = true;
+            int i = 1;
+            var inModelCreating = false;
+            var inConfiguring = false;
 
-				if (!options.UseHandleBars && inModelCreating && line.StartsWith("        }"))
-				{
-					finalLines.Add(string.Empty);
-					finalLines.Add("            OnModelCreatingPartial(modelBuilder);");
-				}
+            foreach (var line in lines)
+            {
+                if (!options.IncludeConnectionString)
+                {
+                    if (line.Trim().Contains("protected override void OnConfiguring"))
+                    {
+                        inConfiguring = true;
+                        continue;
+                    }
 
-				if (!options.UseHandleBars && inModelCreating && line.StartsWith("    }"))
-				{
-					finalLines.Add(string.Empty);
-					finalLines.Add("        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);");
-				}
+                    if (inConfiguring && line.Trim() != string.Empty)
+                    {
+                        continue;
+                    }
 
-				finalLines.Add(line);
-				i++;
-			}
-			File.WriteAllLines(contextFile, finalLines, Encoding.UTF8);
-		}
+                    if (inConfiguring && line.Trim() == string.Empty)
+                    {
+                        inConfiguring = false;
+                        continue;
+                    }
+                }
 
-		private void PostProcess(string file, bool idReplace)
-		{
-			var text = File.ReadAllText(file, Encoding.UTF8);
-			if (idReplace)
-			{
-				text = text.Replace("Id, ", "ID, ");
-				text = text.Replace("Id }", "ID }");
-				text = text.Replace("Id }", "ID }");
-				text = text.Replace("Id)", "ID)");
-				text = text.Replace("Id { get; set; }", "ID { get; set; }");
-			}
-			File.WriteAllText(file, text.TrimEnd(), Encoding.UTF8);
-		}
-	}
+                if (modelNamespace != contextNamespace)
+                {
+                    if (line.Contains("using System;"))
+                    {
+                        finalLines.Add("using " + modelNamespace + ";");
+                    }
+                    if (line.Contains("namespace"))
+                    {
+                        finalLines.Add("namespace " + contextNamespace);
+                        continue;
+                    }
+                }
+
+                if (line.Contains("OnModelCreating")) inModelCreating = true;
+
+                if (!options.UseHandleBars && inModelCreating && line.StartsWith("        }"))
+                {
+                    finalLines.Add(string.Empty);
+                    finalLines.Add("            OnModelCreatingPartial(modelBuilder);");
+                }
+
+                if (!options.UseHandleBars && inModelCreating && line.StartsWith("    }"))
+                {
+                    finalLines.Add(string.Empty);
+                    finalLines.Add("        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);");
+                }
+
+                finalLines.Add(line);
+                i++;
+            }
+            File.WriteAllLines(contextFile, finalLines, Encoding.UTF8);
+        }
+
+        private void PostProcess(string file, bool idReplace)
+        {
+            var text = File.ReadAllText(file, Encoding.UTF8);
+            if (idReplace)
+            {
+                text = text.Replace("Id, ", "ID, ");
+                text = text.Replace("Id }", "ID }");
+                text = text.Replace("Id }", "ID }");
+                text = text.Replace("Id)", "ID)");
+                text = text.Replace("Id { get; set; }", "ID { get; set; }");
+            }
+            File.WriteAllText(file, PathHelper.Header + Environment.NewLine + text.TrimEnd(), Encoding.UTF8);
+        }
+
+        private void CleanUp(SavedModelFiles filePaths, List<string> entityTypeConfigurationPaths)
+        {
+            var contextFolderFiles = Directory.GetFiles(Path.GetDirectoryName(filePaths.ContextFile), "*.cs");
+
+            var allGeneratedFiles = filePaths.AdditionalFiles.Select(s => Path.GetFullPath(s)).Concat(new List<string> { Path.GetFullPath(filePaths.ContextFile) }).Concat(entityTypeConfigurationPaths).ToList();
+
+            foreach (var contextFolderFile in contextFolderFiles)
+            {
+                if (allGeneratedFiles.Contains(contextFolderFile, StringComparer.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                TryRemoveFile(contextFolderFile);
+            }
+
+            if (filePaths.AdditionalFiles.Count == 0)
+                return;
+
+            foreach (var modelFile in Directory.GetFiles(Path.GetDirectoryName(filePaths.AdditionalFiles.First()), "*.cs"))
+            {
+                if (allGeneratedFiles.Contains(modelFile, StringComparer.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                TryRemoveFile(modelFile);
+            }
+        }
+
+        private static void TryRemoveFile(string codeFile)
+        {
+            string firstLine;
+            using (var reader = new StreamReader(codeFile, Encoding.UTF8))
+            {
+                firstLine = reader.ReadLine() ?? "";
+            }
+
+            if (firstLine == PathHelper.Header)
+            {
+                try
+                {
+                    File.Delete(codeFile);
+                }
+                catch { }
+            }
+        }
+    }
 }

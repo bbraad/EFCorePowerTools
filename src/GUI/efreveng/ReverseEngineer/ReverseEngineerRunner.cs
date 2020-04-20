@@ -30,13 +30,13 @@ namespace ReverseEngineer20.ReverseEngineer
                 schemas.Add(reverseEngineerOptions.DefaultDacpacSchema);
             }
 
-            var outputDir = reverseEngineerOptions.OutputPath != null
+            var outputDir = !string.IsNullOrEmpty(reverseEngineerOptions.OutputPath)
                ? Path.IsPathFullyQualified(reverseEngineerOptions.OutputPath)
                     ? reverseEngineerOptions.OutputPath
                     : Path.GetFullPath(Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputPath))
                 : reverseEngineerOptions.ProjectPath;
 
-            var outputContextDir = reverseEngineerOptions.OutputContextPath != null
+            var outputContextDir = !string.IsNullOrEmpty(reverseEngineerOptions.OutputContextPath)
                ? Path.IsPathFullyQualified(reverseEngineerOptions.OutputContextPath)
                     ? reverseEngineerOptions.OutputContextPath
                     : Path.GetFullPath(Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputContextPath))
@@ -73,7 +73,7 @@ namespace ReverseEngineer20.ReverseEngineer
 
             var filePaths = scaffolder.Save(
                 scaffoldedModel,
-                Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputPath ?? string.Empty),
+                Path.GetFullPath(Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputPath ?? string.Empty)),
                 overwriteFiles: true);
 
             string fixedNamespace = modelNamespace != contextNamespace
@@ -88,6 +88,10 @@ namespace ReverseEngineer20.ReverseEngineer
             }
 
             PostProcess(filePaths.ContextFile);
+
+            var entityTypeConfigurationPaths = SplitDbContext(filePaths.ContextFile, reverseEngineerOptions.UseDbContextSplitting, contextNamespace);
+
+            CleanUp(filePaths, entityTypeConfigurationPaths);
 
 			//EG tilpasninger
 			var outputFolder = Path.Combine(reverseEngineerOptions.ProjectPath, reverseEngineerOptions.OutputPath);
@@ -106,12 +110,23 @@ namespace ReverseEngineer20.ReverseEngineer
             return result;
         }
 
+        private List<string> SplitDbContext(string contextFile, bool useDbContextSplitting, string contextNamespace)
+        {
+            if (!useDbContextSplitting)
+            {
+                return new List<string>();
+            }
+
+            return DbContextSplitter.Split(contextFile, contextNamespace);
+        }
+
         private void PostProcessContext(string contextFile, ReverseEngineerCommandOptions options, string fixedNamespace)
         {
             var finalLines = new List<string>();
             var lines = File.ReadAllLines(contextFile);
 
             int i = 1;
+            var inConfiguring = false;
 
             foreach (var line in lines)
             {
@@ -125,11 +140,22 @@ namespace ReverseEngineer20.ReverseEngineer
 
                 if (!options.IncludeConnectionString)
                 {
-                    if (line.Trim().StartsWith("#warning To protect"))
+                    if (line.Trim().Contains("protected override void OnConfiguring"))
+                    {
+                        inConfiguring = true;
                         continue;
+                    }
 
-                    if (line.Trim().StartsWith("optionsBuilder.Use"))
+                    if (inConfiguring && line.Trim() != string.Empty)
+                    {
                         continue;
+                    }
+
+                    if (inConfiguring && line.Trim() == string.Empty)
+                    {
+                        inConfiguring = false;
+                        continue;
+                    }
                 }
 
                 finalLines.Add(line);
@@ -141,7 +167,55 @@ namespace ReverseEngineer20.ReverseEngineer
         private void PostProcess(string file)
         {
             var text = File.ReadAllText(file, Encoding.UTF8);
-            File.WriteAllText(file, text.TrimEnd(), Encoding.UTF8);
+            File.WriteAllText(file, PathHelper.Header + Environment.NewLine + text.TrimEnd(), Encoding.UTF8);
+        }
+
+        private void CleanUp(SavedModelFiles filePaths, List<string> entityTypeConfigurationPaths)
+        {
+            var contextFolderFiles = Directory.GetFiles(Path.GetDirectoryName(filePaths.ContextFile), "*.cs");
+
+            var allGeneratedFiles = filePaths.AdditionalFiles.Select(s => Path.GetFullPath(s)).Concat(new List<string> { Path.GetFullPath(filePaths.ContextFile) }).Concat(entityTypeConfigurationPaths).ToList();
+
+            foreach (var contextFolderFile in contextFolderFiles)
+            {
+                if (allGeneratedFiles.Contains(contextFolderFile, StringComparer.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                TryRemoveFile(contextFolderFile);
+            }
+
+            if (filePaths.AdditionalFiles.Count == 0)
+                return;
+
+            foreach (var modelFile in Directory.GetFiles(Path.GetDirectoryName(filePaths.AdditionalFiles.First()), "*.cs"))
+            {
+                if (allGeneratedFiles.Contains(modelFile, StringComparer.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                TryRemoveFile(modelFile);
+            }
+        }
+
+        private static void TryRemoveFile(string codeFile)
+        {
+            string firstLine;
+            using (var reader = new StreamReader(codeFile, Encoding.UTF8))
+            {
+                firstLine = reader.ReadLine() ?? "";
+            }
+
+            if (firstLine == PathHelper.Header)
+            {
+                try
+                {
+                    File.Delete(codeFile);
+                }
+                catch { }
+            }
         }
     }
 }

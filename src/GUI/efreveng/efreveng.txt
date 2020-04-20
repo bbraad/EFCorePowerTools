@@ -9,7 +9,7 @@
    "IdReplace": false,
    "IncludeConnectionString": false,
    "OutputPath": "Models",
-   "OutputContextPath": "C:\\Code\\Context",
+   "OutputContextPath": null,
    "ModelNamespace": "Modelos",
    "ContextNamespace": "Context",
    "ProjectPath": "C:\\Temp\\Test\\",

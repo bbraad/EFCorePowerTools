@@ -98,7 +98,7 @@
     </Compile>
     <Compile Include="EFCorePowerToolsPackage.cs" />
     <Compile Include="Extensions\CustomNameOptionsExtensions.cs" />
-    <Compile Include="Extensions\EvnDTEExtensions.cs" />
+    <Compile Include="Extensions\EnvDTEExtensions.cs" />
     <Compile Include="Extensions\ReverseEngineerOptionsExtensions.cs" />
     <Compile Include="Extensions\ProjectExtensions.cs" />
     <Compile Include="Extensions\ProjectItemsExtensions.cs" />
@@ -116,6 +116,7 @@
     <Compile Include="Helpers\Model.cs" />
     <Compile Include="Helpers\NuGetHelper.cs" />
     <Compile Include="Helpers\RepositoryHelper.cs" />
+    <Compile Include="Helpers\ReverseEngineerHelper.cs" />
     <Compile Include="Helpers\SqlCe40ProviderRegistration.cs" />
     <Compile Include="Helpers\SqliteProviderRegistration.cs" />
     <Compile Include="Helpers\Telemetry.cs" />
@@ -169,12 +170,6 @@
     <Content Include="efpt\2.2.0\Microsoft.EntityFrameworkCore.Design.dll">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="efpt\2.2.4\efpt.exe">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="efpt\2.2.4\Microsoft.EntityFrameworkCore.Design.dll">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
     <Content Include="efpt\2.2.6\efpt.exe">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
@@ -220,9 +215,6 @@
     <None Include="app.config" />
     <None Include="efpt.renaming.json" />
     <Content Include="efpt\2.2.0\efpt.exe.config">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="efpt\2.2.4\efpt.exe.config">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="efpt\2.2.6\efpt.exe.config">

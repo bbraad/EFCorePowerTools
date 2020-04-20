@@ -8,13 +8,14 @@
                  WindowStartupLocation="CenterOwner"
                  ResizeMode="NoResize" 
                  ShowInTaskbar="False"
+                 SizeToContent="WidthAndHeight"
                  mc:Ignorable="d" 
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:viewModels="clr-namespace:EFCorePowerTools.ViewModels"
                  Loaded="Window_Loaded"
-                 Width="420"
-                 Height="200"
+                 MinWidth="420"
+                 MinHeight="200"
                  d:DataContext="{d:DesignInstance Type=viewModels:PickServerDatabaseViewModel, IsDesignTimeCreatable=False}">
 
     <i:Interaction.Triggers>
@@ -95,7 +96,7 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Center">
-            <CheckBox x:Name="IncludeViews" IsChecked="{Binding IncludeViews}" >Use EF Core 3.0</CheckBox>
+            <CheckBox x:Name="IncludeViews" IsChecked="{Binding IncludeViews}" >Use EF Core 3.x</CheckBox>
         </StackPanel>
         
         <StackPanel Grid.Row="3"

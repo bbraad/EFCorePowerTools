@@ -9,6 +9,6 @@ namespace ReverseEngineer20
         SQLServer = 3,
         SQLite = 4,
         Npgsql = 5,
-        Mysql = 6
+        Mysql = 6,
     }
 }

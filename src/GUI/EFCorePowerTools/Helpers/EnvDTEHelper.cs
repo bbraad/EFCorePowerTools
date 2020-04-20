@@ -1,19 +1,20 @@
 ﻿using EFCorePowerTools;
 using EFCorePowerTools.Shared.Models;
 using ErikEJ.SqlCeScripting;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Data.Core;
 using Microsoft.VisualStudio.Data.Services;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using MySql.Data.MySqlClient;
 using Npgsql;
+using ReverseEngineer20;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
-using ReverseEngineer20;
 
 // ReSharper disable once CheckNamespace
 namespace ErikEJ.SqlCeToolbox.Helpers
@@ -31,6 +32,7 @@ namespace ErikEJ.SqlCeToolbox.Helpers
             Guid providerSqlitePrivate = new Guid(EFCorePowerTools.Shared.Resources.SQLitePrivateProvider);
             Guid providerNpgsql = new Guid(Resources.NpgsqlProvider);
             Guid providerMysql = new Guid(Resources.MysqlVSProvider);
+            Guid providerOracle = new Guid(Resources.OracleProvider);
 
             bool isV40Installed = RepositoryHelper.IsV40Installed() &&
                 (DdexProviderIsInstalled(provider40) || DdexProviderIsInstalled(provider40Private));
@@ -167,7 +169,6 @@ namespace ErikEJ.SqlCeToolbox.Helpers
                     dbType = DatabaseType.Npgsql;
                     providerGuid = Resources.NpgsqlProvider;
                 }
-
                 if (providerInvariant == "Mysql" || providerInvariant == "MySql.Data.MySqlClient")
                 {
                     dbType = DatabaseType.Mysql;
@@ -302,8 +303,10 @@ namespace ErikEJ.SqlCeToolbox.Helpers
                 var helper = new SqlServerHelper();
                 return helper.PathFromConnectionString(connectionString);
             }
+            
             if (dbType == DatabaseType.Npgsql)
                 return GetNpgsqlDatabaseName(connectionString);
+            
             if (dbType == DatabaseType.Mysql)
                 return GetMysqlDatabaseName(connectionString);
 
@@ -322,6 +325,18 @@ namespace ErikEJ.SqlCeToolbox.Helpers
                 return false;
             }
             return true;
+        }
+
+        internal static string[] GetProjectFilesInSolution(EFCorePowerToolsPackage package)
+        {
+            IVsSolution sol = package.GetService<IVsSolution>();
+            uint numProjects;
+            ErrorHandler.ThrowOnFailure(sol.GetProjectFilesInSolution((uint)__VSGETPROJFILESFLAGS.GPFF_SKIPUNLOADEDPROJECTS, 0, null, out numProjects));
+            string[] projects = new string[numProjects];
+            ErrorHandler.ThrowOnFailure(sol.GetProjectFilesInSolution((uint)__VSGETPROJFILESFLAGS.GPFF_SKIPUNLOADEDPROJECTS, numProjects, projects, out numProjects));
+            //GetProjectFilesInSolution also returns solution folders, so we want to do some filtering
+            //things that don't exist on disk certainly can't be project files
+            return projects.Where(p => !string.IsNullOrEmpty(p) && File.Exists(p)).ToArray();
         }
 
         // <summary>

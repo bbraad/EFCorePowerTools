@@ -140,6 +140,68 @@ namespace UnitTests.Services
         }
 
         [Test]
+        public void Issue_354()
+        {
+            //Arrange
+            var exampleOption = new List<Schema>
+              {
+                  new Schema
+                  {
+                       SchemaName = "stg",
+                       UseSchemaName = false,
+                       Tables = new List<TableRenamer>{ new TableRenamer {  Name = "DeliveryAddress", NewName = "stg_DeliveryAddress" } }
+                  },
+                  new Schema
+                  {
+                       SchemaName = "stg",
+                       UseSchemaName = false,
+                       Tables = new List<TableRenamer>
+                       { 
+                           new TableRenamer 
+                           {  
+                               Name = "Jobs", 
+                               NewName = "stg_Jobs",
+                               Columns = new List<ColumnNamer>
+                               {
+                                   new ColumnNamer
+                                   { 
+                                     Name = "JobName",
+                                     NewName = "JobRename",
+                                   }
+                               }
+                           }
+                           
+                       }
+                  },
+              };
+
+            var sut = new ReplacingCandidateNamingService(exampleOption);
+
+            var exampleDbTables = new List<DatabaseTable>
+            {
+                new DatabaseTable {
+                    Name = "DeliveryAddress",
+                    Schema = "stg"
+                },
+                new DatabaseTable {
+                    Name = "Jobs",
+                    Schema = "stg"
+                },
+            };
+
+            // Act
+            var results = new List<string>();
+            foreach (var table in exampleDbTables)
+            {
+                results.Add(sut.GenerateCandidateIdentifier(table));
+            }
+
+            //Assert    
+            StringAssert.AreEqualIgnoringCase("stg_Jobs", results[1]);
+            StringAssert.AreEqualIgnoringCase("stg_DeliveryAddress", results[0]);
+        }
+
+        [Test]
         public void GeneratePascalCaseTableNameWithMoreThanTwoSchemasForTableCollection()
         {
             //Arrange
@@ -222,7 +284,7 @@ namespace UnitTests.Services
                         {
                          new TableRenamer{
                              NewName = "new_name_of_the_table",
-                             Name = "OldTableName"
+                             Name = "OldTableName",
                          }
                         }
 

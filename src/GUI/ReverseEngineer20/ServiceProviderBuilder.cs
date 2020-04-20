@@ -44,11 +44,11 @@ namespace ReverseEngineer20
             {
                 if (options.UseLegacyPluralizer)
                 {
-                    serviceCollection.AddSingleton<IPluralizer, LegacyInflectorPluralizer>();
+                    serviceCollection.AddSingleton<IPluralizer, LegacyPluralizer>();
                 }
                 else
                 {
-                    serviceCollection.AddSingleton<IPluralizer, InflectorPluralizer>();
+                    serviceCollection.AddSingleton<IPluralizer, HumanizerPluralizer>();
                 }
             }
 
@@ -65,13 +65,17 @@ namespace ReverseEngineer20
                     var provider = new SqlServerDesignTimeServices();
                     provider.ConfigureDesignTimeServices(serviceCollection);
 
-                    var spatial = new SqlServerNetTopologySuiteDesignTimeServices();
-                    spatial.ConfigureDesignTimeServices(serviceCollection);
-
                     if (!string.IsNullOrEmpty(options.Dacpac))
                     {
                         serviceCollection.AddSingleton<IDatabaseModelFactory, SqlServerDacpacDatabaseModelFactory>();
                     }
+
+                    if (options.UseSpatial)
+                    {
+                        var spatial = new SqlServerNetTopologySuiteDesignTimeServices();
+                        spatial.ConfigureDesignTimeServices(serviceCollection);
+                    }
+
                     break;
                 case DatabaseType.Npgsql:
                     var npgsqlProvider = new NpgsqlDesignTimeServices();

@@ -30,5 +30,7 @@ namespace ReverseEngineer20
         public string DefaultDacpacSchema { get; set; }
         public bool UseLegacyPluralizer { get; set; }
         public bool DoNotCombineNamespace { get; set; }
+        public bool UseSpatial { get; set; }
+        public bool UseDbContextSplitting { get; set; }
     }
 }

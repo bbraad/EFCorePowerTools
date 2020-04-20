@@ -1,4 +1,5 @@
 ﻿using EntityFrameworkCore.Scaffolding.Handlebars;
+using ErikEJ.EntityFrameworkCore.SqlServer.Scaffolding;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.EntityFrameworkCore.Scaffolding;
@@ -21,6 +22,7 @@ namespace ReverseEngineer20.ReverseEngineer
 
             serviceCollection
                 .AddEntityFrameworkDesignTimeServices()
+                .AddSingleton<ICSharpEntityTypeGenerator, CommentCSharpEntityTypeGenerator>()
                 .AddSingleton<IOperationReporter, OperationReporter>()
                 .AddSingleton<IOperationReportHandler, OperationReportHandler>();
 
@@ -42,11 +44,11 @@ namespace ReverseEngineer20.ReverseEngineer
             {
                 if (options.UseLegacyPluralizer)
                 {
-                    serviceCollection.AddSingleton<IPluralizer, LegacyInflectorPluralizer>();
+                    serviceCollection.AddSingleton<IPluralizer, LegacyPluralizer>();
                 }
                 else
                 {
-                    serviceCollection.AddSingleton<IPluralizer, InflectorPluralizer>();
+                    serviceCollection.AddSingleton<IPluralizer, HumanizerPluralizer>();
                 }
             }
 
@@ -57,13 +59,17 @@ namespace ReverseEngineer20.ReverseEngineer
                     var provider = new SqlServerDesignTimeServices();
                     provider.ConfigureDesignTimeServices(serviceCollection);
 
-                    var spatial = new SqlServerNetTopologySuiteDesignTimeServices();
-                    spatial.ConfigureDesignTimeServices(serviceCollection);
-
                     if (!string.IsNullOrEmpty(options.Dacpac))
                     {
                         serviceCollection.AddSingleton<IDatabaseModelFactory, SqlServerDacpacDatabaseModelFactory>();
                     }
+
+                    if (options.UseSpatial)
+                    {
+                        var spatial = new SqlServerNetTopologySuiteDesignTimeServices();
+                        spatial.ConfigureDesignTimeServices(serviceCollection);
+                    }
+
                     break;
 
                 case DatabaseType.Npgsql:
