@@ -1,7 +1,9 @@
 # EF Core Power Tools
 (Fork of ErikEJ EF Core Power Tools customized to local needs).
 
-Entity Framework Core Power Tools - reverse engineering and model visualization for EF Core
+Reverse engineering, model visualization and migrations UI for EF Core.
+
+Hopes to lower the bar for getting started with EF Core, by providing GUI based assistance with reverse engineeering of an existing database, creating migrations and visualizing your DbContext model.
 
 [![Gitter](https://badges.gitter.im/EFCorePowerTools/community.svg)](https://gitter.im/EFCorePowerTools/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![Visual Studio Marketplace Version](https://vsmarketplacebadge.apphb.com/version/ErikEJ.EFCorePowerTools.svg)](https://marketplace.visualstudio.com/items?itemName=ErikEJ.EFCorePowerTools)
@@ -20,7 +22,7 @@ If you use my free tools, I would be very grateful for a [rating or review here]
 
 # Downloads/builds
 
-The EF Core Power Tools contains DbContext design time feature: Reverse Engineering, Model inspection and more to come - see the [wiki page](https://github.com/ErikEJ/EFCorePowerTools/wiki) for more information. .NET Framework 4.7.1 or later is required.
+The EF Core Power Tools contains DbContext design time feature: Reverse Engineering, Model inspection and more to come - see the [wiki page](https://github.com/ErikEJ/EFCorePowerTools/wiki) for more information. .NET Framework 4.7.1 or later is required. For EF Core 3 reverse engineering, .NET Core 3 must be installed.
 
 **Release**
 
@@ -32,11 +34,7 @@ Or just install from Tools, Extensions and Updates in Visual Studio! ![](https:/
 
 You can download the daily build from [VSIX Gallery](https://vsixgallery.com/extensions/f4c4712c-ceae-4803-8e52-0e2049d5de9f/extension.vsix)
 
-You can also use this **Feed URL**: 
-[https://vsixgallery.com/feed/extension/f4c4712c-ceae-4803-8e52-0e2049d5de9f](https://vsixgallery.com/feed/extension/f4c4712c-ceae-4803-8e52-0e2049d5de9f) 
-
-following [these instructions to automatically get the latest build of the Master branch directly in Visual Studio](https://github.com/ErikEJ/SqlCeToolbox/wiki/Subscribing-to-latest-%22daily%22-build)
-
+Ensure you always have the latest daily build (if you are brave) by installing [this extension](https://marketplace.visualstudio.com/items?itemName=MadsKristensen.VSIXGallery-nightlybuilds)
 
 # How do I contribute
 

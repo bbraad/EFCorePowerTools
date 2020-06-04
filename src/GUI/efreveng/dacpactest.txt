@@ -2,7 +2,7 @@
    "ConnectionString": null,
    "ContextClassName": "DacpacContext",
    "CustomReplacers": null,
-   "Dacpac": "C:\\Code\\EFCorePowerTools\\src\\GUI\\UnitTests\\ChinookView.dacpac",
+   "Dacpac": "C:\\Code\\EFCorePowerTools\\src\\GUI\\UnitTests\\NorthwindViews.dacpac",
    "DatabaseType": 3,
    "DefaultDacpacSchema": null,
    "DoNotCombineNamespace": false,
@@ -16,19 +16,31 @@
    "Tables": [
       {
          "HasPrimaryKey": true,
-         "Name": "dbo.Album"
-      },
-	  {
-         "HasPrimaryKey": false,
-         "Name": "dbo.AlbumView"
+         "Name": "[dbo].[Shippers]"
       },
       {
          "HasPrimaryKey": true,
-         "Name": "dbo.Artist"
+         "Name": "[dbo].[Orders]"
+      },
+      {
+         "HasPrimaryKey": true,
+         "Name": "[dbo].[Order Details]"
+      },
+	  {
+         "HasPrimaryKey": false,
+         "Name": "[dbo].[Order Subtotals]"
+      },
+      	{
+         "HasPrimaryKey": false,
+         "Name": "[dbo].[Summary of Sales by Year]"
+      },
+      {
+         "HasPrimaryKey": true,
+         "Name": "[dbo].[Products]"
       }
    ],
    "UseDatabaseNames": false,
-   "UseFluentApiOnly": true,
+   "UseFluentApiOnly": false,
    "UseHandleBars": false,
    "UseInflector": true,
    "UseLegacyPluralizer": false

@@ -115,7 +115,7 @@ namespace EFCorePowerTools.Handlers
                 var options = ReverseEngineerOptionsExtensions.TryRead(optionsPath);
 
                 List<TableInformationModel> predefinedTables = !string.IsNullOrEmpty(dacpacPath)
-                                           ? GetDacpacTables(dacpacPath)
+                                           ? GetDacpacTables(dacpacPath, includeViews)
                                            : RepositoryHelper.GetTablesFromRepository(dbInfo, includeViews);
 
                 var preselectedTables = new List<TableInformationModel>();
@@ -146,6 +146,10 @@ namespace EFCorePowerTools.Handlers
                 else if (dbInfo.DatabaseType == DatabaseType.Mysql)
                 {
                     classBasis = EnvDteHelper.GetMysqlDatabaseName(dbInfo.ConnectionString);
+                }
+                else if (dbInfo.DatabaseType == DatabaseType.Oracle)
+                {
+                    classBasis = EnvDteHelper.GetOracleDatabaseName(dbInfo.ConnectionString);
                 }
                 else
                 {
@@ -206,7 +210,8 @@ namespace EFCorePowerTools.Handlers
                     UseDatabaseNames = modelingOptionsResult.Payload.UseDatabaseNames,
                     UseInflector = modelingOptionsResult.Payload.UsePluralizer,
                     UseLegacyPluralizer = options?.UseLegacyPluralizer ?? false,
-                    UseSpatial = options?.UseSpatial ?? false,                    
+                    UseSpatial = options?.UseSpatial ?? false,
+                    UseNodaTime = options?.UseNodaTime ?? false,
                     UseDbContextSplitting = modelingOptionsResult.Payload.UseDbContextSplitting,
                     IdReplace = modelingOptionsResult.Payload.ReplaceId,
                     DoNotCombineNamespace = modelingOptionsResult.Payload.DoNotCombineNamespace,
@@ -335,10 +340,10 @@ namespace EFCorePowerTools.Handlers
             return false;
         }
 
-        public List<TableInformationModel> GetDacpacTables(string dacpacPath)
+        public List<TableInformationModel> GetDacpacTables(string dacpacPath, bool includeViews)
         {
             var builder = new DacpacTableListBuilder(dacpacPath);
-            return builder.GetTableDefinitions();
+            return builder.GetTableDefinitions(includeViews);
         }
     }
 }
